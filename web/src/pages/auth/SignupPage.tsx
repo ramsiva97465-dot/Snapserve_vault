@@ -1,325 +1,275 @@
-import { useState } from "react";
+import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
-import {
-  ShieldCheck, Lock, Mail, Eye, EyeOff, ArrowRight, User as UserIcon,
-  Phone, Building2, CheckCircle2, Sparkles, Shield
-} from "lucide-react";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
 import { useAuthStore } from "@/stores/authStore";
 
-const schema = z.object({
-  name: z.string().min(2, "Full name must be at least 2 characters"),
-  phone: z.string().min(8, "Valid phone number required"),
-  email: z.string().email("Invalid email / Gmail address"),
-  organizationName: z.string().min(2, "Workspace / Company name is required"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string(),
-}).refine((d) => d.password === d.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
-type FormData = z.infer<typeof schema>;
+// ─── Primitive: Button ────────────────────────────────────────────────────────
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 aria-invalid:border-destructive",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+        destructive: "bg-destructive text-white shadow-xs hover:bg-destructive/90",
+        outline: "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground",
+        secondary: "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-9 px-4 py-2 has-[>svg]:px-3",
+        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
+        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+        icon: "size-9",
+      },
+    },
+    defaultVariants: { variant: "default", size: "default" },
+  }
+);
 
+interface ButtonProps
+  extends React.ComponentProps<"button">,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
+}
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
+    return (
+      <Comp
+        data-slot="button"
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+Button.displayName = "Button";
+
+// ─── Primitive: Card ─────────────────────────────────────────────────────────
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {}
+const Card = React.forwardRef<HTMLDivElement, CardProps>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-slot="card"
+    className={cn("bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm", className)}
+    {...props}
+  />
+));
+Card.displayName = "Card";
+
+interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {}
+const CardContent = React.forwardRef<HTMLDivElement, CardContentProps>(({ className, ...props }, ref) => (
+  <div ref={ref} data-slot="card-content" className={cn("px-6", className)} {...props} />
+));
+CardContent.displayName = "CardContent";
+
+// ─── Primitive: Input ────────────────────────────────────────────────────────
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className, type, ...props }, ref) => (
+  <input
+    type={type}
+    data-slot="input"
+    className={cn(
+      "file:text-foreground placeholder:text-muted-foreground border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+      "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+      className
+    )}
+    ref={ref}
+    {...props}
+  />
+));
+Input.displayName = "Input";
+
+// ─── Snapserve Vault Logo SVG ─────────────────────────────────────────────────
+const SnapserveLogo = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 48 48"
+    fill="none"
+    width="48"
+    height="48"
+    aria-label="Snapserve Vault"
+    {...props}
+  >
+    <rect width="48" height="48" rx="12" fill="#0f172a" />
+    <path
+      d="M24 10L28.5 16H34L29.5 20.5L31 27L24 23L17 27L18.5 20.5L14 16H19.5L24 10Z"
+      fill="#3b82f6"
+    />
+    <path
+      d="M20 30L16 38H20L24 32L28 38H32L28 30L24 34L20 30Z"
+      fill="#10b981"
+    />
+    <circle cx="24" cy="24" r="3" fill="white" opacity="0.9" />
+  </svg>
+);
+
+// ─── Main Signup Page Component ───────────────────────────────────────────────
 export default function SignupPage() {
-  const [showPassword, setShowPassword] = useState(false);
-  const { signup, isLoading } = useAuthStore();
+  const [name, setName] = React.useState("");
+  const [phone, setPhone] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [organizationName, setOrganizationName] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const { signup } = useAuthStore();
   const navigate = useNavigate();
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
-  });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !email || !password || !organizationName) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
 
-  const onSubmit = async (data: FormData) => {
+    setIsSubmitting(true);
     try {
       await signup({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        organizationName: data.organizationName,
+        name,
+        email,
+        password,
+        organizationName,
       });
       toast.success("Account created successfully! Welcome to Snapserve Vault.");
       navigate("/dashboard");
-    } catch (error: any) {
-      toast.error(error.message || "Sign up failed. Please try again.");
+    } catch (err: any) {
+      toast.error(err.message || "Account creation failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#090d16] font-sans antialiased text-slate-100 overflow-hidden">
-      
-      {/* ─── LEFT HERO PANEL (Desktop 50%) ──────────────────────────────────── */}
-      <div className="hidden lg:flex lg:w-[50%] relative flex-col justify-between p-12 xl:p-16 border-r border-slate-800/60 bg-gradient-to-br from-[#0c1220] via-[#090d16] to-[#060911]">
-        
-        {/* Ambient Glow */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="flex items-center justify-center min-h-screen bg-slate-50 py-10">
+      <Card className="w-full max-w-md rounded-3xl px-2 py-6 pt-10 border border-slate-200 shadow-xl bg-white">
+        <CardContent>
+          <div className="flex flex-col items-center space-y-6">
 
-        {/* Header Logo */}
-        <div className="relative z-10 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <ShieldCheck className="w-6 h-6 text-white" />
+            {/* Logo */}
+            <SnapserveLogo />
+
+            {/* Header */}
+            <div className="space-y-1.5 text-center">
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight font-display">
+                Create account
+              </h1>
+              <p className="text-slate-500 text-sm">
+                Already have an account?{" "}
+                <Link to="/login" className="text-slate-900 font-semibold hover:underline">
+                  Sign in
+                </Link>
+              </p>
             </div>
-            <div className="flex flex-col">
-              <span className="font-display text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
-                Snapserve<span className="text-blue-400 font-extrabold">.ai</span>
-              </span>
-              <span className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Vault Security</span>
-            </div>
-          </Link>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs font-medium text-slate-300 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Free Instant Account Setup
-          </div>
-        </div>
+            {/* Form */}
+            <form className="w-full space-y-3" onSubmit={handleSubmit}>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Full name"
+                className="w-full rounded-xl h-11 border-slate-200 focus:ring-slate-900"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
 
-        {/* Hero Content */}
-        <div className="relative z-10 my-auto py-8 space-y-8 max-w-xl">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" /> 1-Click Multi-Member Setup
-            </div>
-            
-            <h1 className="font-display text-4xl xl:text-5xl font-extrabold text-white tracking-tight leading-[1.12]">
-              Create your personal <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-emerald-400">
-                Secure Vault Account.
-              </span>
-            </h1>
-            
-            <p className="text-slate-400 text-base leading-relaxed">
-              Register with your Name, Mobile Number, and Gmail. Manage your own documents or collaborate with team members seamlessly.
-            </p>
-          </div>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Phone number (+91...)"
+                className="w-full rounded-xl h-11 border-slate-200 focus:ring-slate-900"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
 
-          {/* Feature Badges */}
-          <div className="space-y-3 pt-2 text-sm text-slate-300">
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-              <span>Independent Personal Account & Isolated Document Storage</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0" />
-              <span>Automated Email Notifications for Signature Requests</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <CheckCircle2 className="w-5 h-5 text-indigo-400 shrink-0" />
-              <span>Invite up to 5 Team Members to Collaborate</span>
-            </div>
-          </div>
-        </div>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Email address"
+                className="w-full rounded-xl h-11 border-slate-200 focus:ring-slate-900"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+              />
 
-        {/* Footer */}
-        <div className="relative z-10 text-xs text-slate-400 flex items-center justify-between">
-          <span>© 2026 Snapserve.ai Vault Inc.</span>
-          <span className="flex items-center gap-1 text-slate-400">
-            <Shield className="w-3.5 h-3.5 text-blue-400" /> Bank-Grade 256-Bit SSL Protected
-          </span>
-        </div>
+              <Input
+                id="orgName"
+                type="text"
+                placeholder="Organization / Workspace name"
+                className="w-full rounded-xl h-11 border-slate-200 focus:ring-slate-900"
+                value={organizationName}
+                onChange={(e) => setOrganizationName(e.target.value)}
+                required
+              />
 
-      </div>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Password (min. 8 characters)"
+                className="w-full rounded-xl h-11 border-slate-200 focus:ring-slate-900"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
 
-      {/* ─── RIGHT SIGNUP FORM PANEL (Desktop 50%) ──────────────────────── */}
-      <div className="w-full lg:w-[50%] flex flex-col justify-between p-6 sm:p-10 xl:p-12 bg-[#090d16] relative overflow-y-auto">
-        
-        {/* Navigation */}
-        <div className="flex items-center justify-between lg:justify-end">
-          <Link to="/" className="lg:hidden flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-display font-bold text-white text-lg">Snapserve<span className="text-blue-400">.ai</span></span>
-          </Link>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Repeat password"
+                className="w-full rounded-xl h-11 border-slate-200 focus:ring-slate-900"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
 
-          <div className="text-sm text-slate-400">
-            Already have an account?{" "}
-            <Link to="/login" className="text-blue-400 font-semibold hover:text-blue-300 transition-colors underline underline-offset-4">
-              Sign in
-            </Link>
-          </div>
-        </div>
-
-        {/* Signup Form */}
-        <div className="my-auto py-6 max-w-md w-full mx-auto space-y-6">
-          
-          <div className="space-y-1.5">
-            <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Create your account
-            </h2>
-            <p className="text-slate-400 text-sm">
-              Enter your details below to set up your personal workspace.
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            
-            {/* Full Name */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                Full Name
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <UserIcon className="w-4 h-4" />
-                </div>
-                <input
-                  {...register("name")}
-                  type="text"
-                  placeholder="Sivaram R S"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                />
+              <div className="pt-2">
+                <Button
+                  id="create-account-btn"
+                  type="submit"
+                  className="w-full rounded-xl h-11 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-md"
+                  size="lg"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    "Create account"
+                  )}
+                </Button>
               </div>
-              {errors.name && <p className="text-xs text-rose-400">{errors.name.message}</p>}
-            </div>
+            </form>
 
-            {/* Mobile Number & Email (2 columns) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              
-              {/* Phone */}
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                  Mobile Number
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Phone className="w-4 h-4" />
-                  </div>
-                  <input
-                    {...register("phone")}
-                    type="tel"
-                    placeholder="+91 98765 43210"
-                    className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                  />
-                </div>
-                {errors.phone && <p className="text-xs text-rose-400">{errors.phone.message}</p>}
-              </div>
-
-              {/* Gmail / Email */}
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                  Gmail / Email
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <input
-                    {...register("email")}
-                    type="email"
-                    placeholder="you@gmail.com"
-                    className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                  />
-                </div>
-                {errors.email && <p className="text-xs text-rose-400">{errors.email.message}</p>}
-              </div>
-
-            </div>
-
-            {/* Workspace / Company Name */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                Workspace / Organization Name
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Building2 className="w-4 h-4" />
-                </div>
-                <input
-                  {...register("organizationName")}
-                  type="text"
-                  placeholder="My Vault Workspace"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                />
-              </div>
-              {errors.organizationName && <p className="text-xs text-rose-400">{errors.organizationName.message}</p>}
-            </div>
-
-            {/* Passwords (2 columns) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              
-              {/* Password */}
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <input
-                    {...register("password")}
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Min. 8 chars"
-                    className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-300"
-                  >
-                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-                {errors.password && <p className="text-xs text-rose-400">{errors.password.message}</p>}
-              </div>
-
-              {/* Confirm Password */}
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                  Confirm Password
-                </label>
-                <input
-                  {...register("confirmPassword")}
-                  type="password"
-                  placeholder="Repeat pass"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                />
-                {errors.confirmPassword && <p className="text-xs text-rose-400">{errors.confirmPassword.message}</p>}
-              </div>
-
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-blue-600/25 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 group mt-2"
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <span>Create Vault Account</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-
-          </form>
-
-          {/* Footer Note */}
-          <div className="text-center">
-            <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
+            {/* Footer */}
+            <p className="text-center text-xs w-10/12 text-slate-400 leading-relaxed">
               By creating an account, you agree to our{" "}
-              <Link to="/terms" className="text-slate-300 underline hover:text-white">Terms</Link> and{" "}
-              <Link to="/privacy" className="text-slate-300 underline hover:text-white">Privacy Policy</Link>.
+              <Link to="/terms" className="underline hover:text-slate-700 transition-colors">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link to="/privacy" className="underline hover:text-slate-700 transition-colors">
+                Privacy Policy
+              </Link>
+              .
             </p>
           </div>
-
-        </div>
-
-        {/* Mobile Footer */}
-        <div className="text-center text-xs text-slate-400 lg:hidden">
-          © 2026 Snapserve.ai Vault Inc.
-        </div>
-
-      </div>
-
+        </CardContent>
+      </Card>
     </div>
   );
 }
