@@ -28,9 +28,9 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: DEFAULT_USER,
-      token: DEFAULT_TOKEN,
-      isAuthenticated: true,
+      user: null,
+      token: null,
+      isAuthenticated: false,
       isLoading: false,
 
       login: async (email, password) => {
@@ -43,8 +43,9 @@ export const useAuthStore = create<AuthState>()(
           localStorage.setItem("snapserve_token", validToken);
           set({ user: validUser, token: validToken, isAuthenticated: true, isLoading: false });
         } catch (error: any) {
-          localStorage.setItem("snapserve_token", DEFAULT_TOKEN);
-          set({ user: DEFAULT_USER, token: DEFAULT_TOKEN, isAuthenticated: true, isLoading: false });
+          throw error;
+        } finally {
+          set({ isLoading: false });
         }
       },
 
