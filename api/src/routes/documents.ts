@@ -302,6 +302,23 @@ router.post("/:id/send", async (req: AuthRequest, res) => {
           },
         });
       } catch {}
+
+      // Dispatch automated email notification to signer
+      try {
+        if (signer.email && signer.email.includes("@")) {
+          const { sendEmailViaBrevo } = await import("../services/email");
+          await sendEmailViaBrevo({
+            toEmail: signer.email,
+            toName: signer.name || signer.email,
+            subject: `Signature Request: ${memDoc?.title || "Document"}`,
+            documentTitle: memDoc?.title || "Document",
+            shareUrl: signingUrl,
+            message: `${req.user!.name || "Vault Member"} has requested your signature on this document.`,
+          });
+        }
+      } catch (emailErr) {
+        console.warn("Failed to dispatch automated email to signer:", emailErr);
+      }
     }
 
     if (memDoc) {
