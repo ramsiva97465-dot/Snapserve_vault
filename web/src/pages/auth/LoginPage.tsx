@@ -1,25 +1,150 @@
 import * as React from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  ShieldCheck, Lock, Mail, Eye, EyeOff, ArrowRight, CheckCircle2,
-  Sparkles, FileText, BadgeCheck, Shield, RefreshCw
-} from "lucide-react";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
+import * as SeparatorPrimitive from "@radix-ui/react-separator";
 import { useAuthStore } from "@/stores/authStore";
 
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+// ─── Primitive: Button ────────────────────────────────────────────────────────
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 aria-invalid:border-destructive",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+        destructive: "bg-destructive text-white shadow-xs hover:bg-destructive/90",
+        outline: "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground",
+        secondary: "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-9 px-4 py-2 has-[>svg]:px-3",
+        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
+        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+        icon: "size-9",
+      },
+    },
+    defaultVariants: { variant: "default", size: "default" },
+  }
+);
+
+interface ButtonProps
+  extends React.ComponentProps<"button">,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
+}
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
+    return (
+      <Comp
+        data-slot="button"
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+Button.displayName = "Button";
+
+// ─── Primitive: Card ─────────────────────────────────────────────────────────
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {}
+const Card = React.forwardRef<HTMLDivElement, CardProps>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-slot="card"
+    className={cn("bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm", className)}
+    {...props}
+  />
+));
+Card.displayName = "Card";
+
+interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {}
+const CardContent = React.forwardRef<HTMLDivElement, CardContentProps>(({ className, ...props }, ref) => (
+  <div ref={ref} data-slot="card-content" className={cn("px-6", className)} {...props} />
+));
+CardContent.displayName = "CardContent";
+
+// ─── Primitive: Input ────────────────────────────────────────────────────────
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className, type, ...props }, ref) => (
+  <input
+    type={type}
+    data-slot="input"
+    className={cn(
+      "file:text-foreground placeholder:text-muted-foreground border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+      "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+      className
+    )}
+    ref={ref}
+    {...props}
+  />
+));
+Input.displayName = "Input";
+
+// ─── Primitive: Separator ────────────────────────────────────────────────────
+interface SeparatorProps extends React.ComponentPropsWithoutRef<typeof SeparatorPrimitive.Root> {}
+const Separator = React.forwardRef<React.ElementRef<typeof SeparatorPrimitive.Root>, SeparatorProps>(
+  ({ className, orientation = "horizontal", decorative = true, ...props }, ref) => (
+    <SeparatorPrimitive.Root
+      ref={ref}
+      data-slot="separator-root"
+      decorative={decorative}
+      orientation={orientation}
+      className={cn(
+        "bg-border shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px",
+        className
+      )}
+      {...props}
+    />
+  )
+);
+Separator.displayName = SeparatorPrimitive.Root.displayName;
+
+// ─── Snapserve Vault Logo SVG ─────────────────────────────────────────────────
+const SnapserveLogo = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 48 48"
+    fill="none"
+    width="48"
+    height="48"
+    aria-label="Snapserve Vault"
+    {...props}
+  >
+    <rect width="48" height="48" rx="12" fill="#0f172a" />
+    <path
+      d="M24 10L28.5 16H34L29.5 20.5L31 27L24 23L17 27L18.5 20.5L14 16H19.5L24 10Z"
+      fill="#3b82f6"
+    />
+    <path
+      d="M20 30L16 38H20L24 32L28 38H32L28 30L24 34L20 30Z"
+      fill="#10b981"
+    />
+    <circle cx="24" cy="24" r="3" fill="white" opacity="0.9" />
+  </svg>
+);
+
+// ─── Main Login Page Component ────────────────────────────────────────────────
 export default function LoginPage() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [showPassword, setShowPassword] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-
   const { login } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Please enter both your email address and password.");
+      toast.error("Please enter both your email and password.");
       return;
     }
     setIsSubmitting(true);
@@ -34,267 +159,93 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoFill = () => {
-    setEmail("ramsiva97465@gmail.com");
-    setPassword("password123");
-    toast.info("Demo credentials loaded! Click Sign In to proceed.");
-  };
-
   return (
-    <div className="min-h-screen w-full flex bg-[#090d16] font-sans antialiased text-slate-100 overflow-hidden">
-      
-      {/* ─── LEFT HERO SECURITY PANEL (Desktop 55%) ─────────────────────────── */}
-      <div className="hidden lg:flex lg:w-[55%] relative flex-col justify-between p-12 xl:p-16 border-r border-slate-800/60 bg-gradient-to-br from-[#0c1220] via-[#090d16] to-[#060911]">
-        
-        {/* Ambient Glow Orbs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="flex items-center justify-center min-h-screen bg-slate-50">
+      <Card className="w-full max-w-sm rounded-3xl px-2 py-6 pt-10 border border-slate-200 shadow-xl bg-white">
+        <CardContent>
+          <div className="flex flex-col items-center space-y-7">
 
-        {/* Brand Header */}
-        <div className="relative z-10 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <ShieldCheck className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-display text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
-                Snapserve<span className="text-blue-400 font-extrabold">.ai</span>
-              </span>
-              <span className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Vault Security</span>
-            </div>
-          </Link>
+            {/* Logo */}
+            <SnapserveLogo />
 
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs font-medium text-slate-300 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            SOC-2 Type II Certified
-          </div>
-        </div>
-
-        {/* Hero Copy & Visual Card */}
-        <div className="relative z-10 my-auto py-8 space-y-10 max-w-xl">
-          
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" /> Next-Gen e-Signature Vault
-            </div>
-            
-            <h1 className="font-display text-4xl xl:text-5xl font-extrabold text-white tracking-tight leading-[1.12]">
-              Sign documents with <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-emerald-400">
-                100% legal confidence.
-              </span>
-            </h1>
-            
-            <p className="text-slate-400 text-base xl:text-lg leading-relaxed">
-              Automated field presets, bank-grade 256-bit AES encryption, and instant tamper-evident audit logging for enterprise teams.
-            </p>
-          </div>
-
-          {/* Floating Glass Signature Mock Card */}
-          <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-2xl backdrop-blur-xl space-y-4 transform transition-all hover:border-slate-700/80">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-white">Employment_Agreement_2026.pdf</h4>
-                  <span className="text-xs text-slate-400">146.5 KB • 256-Bit AES Encrypted</span>
-                </div>
-              </div>
-              <span className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-xs font-medium border border-emerald-500/20">
-                Encrypted
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between pt-1">
-              <div className="flex items-center gap-2">
-                <BadgeCheck className="w-4 h-4 text-blue-400" />
-                <span className="text-xs font-medium text-slate-300">Verified Signature (Vault Owner)</span>
-              </div>
-              <span className="font-mono text-xs text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/40">
-                ✓ SHA-256 Audit Passed
-              </span>
-            </div>
-          </div>
-
-          {/* Trust Badges */}
-          <div className="grid grid-cols-3 gap-4 pt-2 border-t border-slate-800/60 text-xs text-slate-400 font-medium">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>eIDAS & ESIGN</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />
-              <span>256-Bit Encryption</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
-              <span>Real-Time Audit</span>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Footer info */}
-        <div className="relative z-10 text-xs text-slate-400 flex items-center justify-between">
-          <span>© 2026 Snapserve.ai Vault Inc.</span>
-          <span className="flex items-center gap-1 text-slate-400">
-            <Shield className="w-3.5 h-3.5 text-blue-400" /> Bank-Grade Security Standards
-          </span>
-        </div>
-
-      </div>
-
-      {/* ─── RIGHT WORKSPACE FORM PANEL (Desktop 45%) ───────────────────────── */}
-      <div className="w-full lg:w-[45%] flex flex-col justify-between p-6 sm:p-12 xl:p-16 bg-[#090d16] relative overflow-y-auto">
-        
-        {/* Top Header Navigation */}
-        <div className="flex items-center justify-between lg:justify-end">
-          <Link to="/" className="lg:hidden flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-display font-bold text-white text-lg">Snapserve<span className="text-blue-400">.ai</span></span>
-          </Link>
-
-          <div className="text-sm text-slate-400">
-            Don't have an account?{" "}
-            <Link to="/signup" className="text-blue-400 font-semibold hover:text-blue-300 transition-colors underline underline-offset-4">
-              Sign up free
-            </Link>
-          </div>
-        </div>
-
-        {/* Center Form Card */}
-        <div className="my-auto py-8 max-w-md w-full mx-auto space-y-8">
-          
-          <div className="space-y-2">
-            <h2 className="font-display text-3xl font-extrabold text-white tracking-tight">
-              Welcome back
-            </h2>
-            <p className="text-slate-400 text-sm">
-              Enter your credentials to access your Snapserve Vault workspace.
-            </p>
-          </div>
-
-          {/* Quick Demo Fill Banner */}
-          <div className="p-3.5 rounded-xl bg-slate-900/90 border border-blue-500/20 flex items-center justify-between gap-3 text-xs text-slate-300">
-            <div className="flex items-center gap-2.5">
-              <span className="p-1 rounded-md bg-blue-500/20 text-blue-400">⚡</span>
-              <div>
-                <span className="font-semibold text-white">Quick Demo Mode</span>
-                <p className="text-slate-400 text-[11px]">Fill 1-click test credentials</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleDemoFill}
-              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
-            >
-              <RefreshCw className="w-3 h-3" /> Auto-fill
-            </button>
-          </div>
-
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            
-            {/* Email Field */}
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                Work Email Address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                />
-              </div>
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                  Password
-                </label>
-                <Link
-                  to="/forgot-password"
-                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium"
-                >
-                  Forgot password?
+            {/* Header */}
+            <div className="space-y-1.5 text-center">
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight font-display">
+                Welcome back!
+              </h1>
+              <p className="text-slate-500 text-sm">
+                Don't have an account?{" "}
+                <Link to="/signup" className="text-slate-900 font-semibold hover:underline">
+                  Sign up for free
                 </Link>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <input
+              </p>
+            </div>
+
+            {/* Form */}
+            <form className="w-full space-y-3" onSubmit={handleSubmit}>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Your email"
+                className="w-full rounded-xl h-11 border-slate-200 focus:ring-slate-900"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+              />
+              <div className="space-y-1">
+                <Input
                   id="password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  autoComplete="current-password"
+                  type="password"
+                  placeholder="Your password"
+                  className="w-full rounded-xl h-11 border-slate-200 focus:ring-slate-900"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                  autoComplete="current-password"
+                  required
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-300 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+                <div className="flex justify-end">
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs text-slate-400 hover:text-slate-700 transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <button
-              id="sign-in-btn"
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-blue-600/25 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 group"
-            >
-              {isSubmitting ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <span>Sign In to Snapserve Vault</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
+              <div className="pt-1">
+                <Button
+                  id="sign-in-btn"
+                  type="submit"
+                  className="w-full rounded-xl h-11 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-md"
+                  size="lg"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    "Sign In"
+                  )}
+                </Button>
+              </div>
+            </form>
 
-          </form>
-
-          {/* Security Guarantee Note */}
-          <div className="pt-2 text-center">
-            <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
-              Protected by 256-bit SSL encryption. By signing in, you accept our{" "}
-              <Link to="/terms" className="text-slate-300 underline hover:text-white">Terms</Link> and{" "}
-              <Link to="/privacy" className="text-slate-300 underline hover:text-white">Privacy Policy</Link>.
+            {/* Footer */}
+            <p className="text-center text-xs w-10/12 text-slate-400 leading-relaxed">
+              By signing in, you agree to our{" "}
+              <Link to="/terms" className="underline hover:text-slate-700 transition-colors">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link to="/privacy" className="underline hover:text-slate-700 transition-colors">
+                Privacy Policy
+              </Link>
+              .
             </p>
           </div>
-
-        </div>
-
-        {/* Bottom Mobile Footer */}
-        <div className="text-center text-xs text-slate-400 lg:hidden">
-          © 2026 Snapserve.ai Vault Inc.
-        </div>
-
-      </div>
-
+        </CardContent>
+      </Card>
     </div>
   );
 }
