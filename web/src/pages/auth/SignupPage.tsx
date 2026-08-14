@@ -141,6 +141,7 @@ export default function SignupPage() {
     try {
       await signup({
         name,
+        phone,
         email,
         password,
         organizationName,

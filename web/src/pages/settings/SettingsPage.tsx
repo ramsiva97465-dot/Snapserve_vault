@@ -13,42 +13,91 @@ const SETTINGS_NAV = [
 ];
 
 function ProfileSettings() {
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [organizationName, setOrganizationName] = useState(user?.organizationName || "Snapserve Vault");
+  const [phone, setPhone] = useState(user?.phone || "+91 98765 43210");
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setEmail(user.email || "");
+      setOrganizationName(user.organizationName || "Snapserve Vault");
+      setPhone(user.phone || "");
+    }
+  }, [user]);
+
+  const handleSave = () => {
+    updateUser({
+      name,
+      email,
+      organizationName,
+      phone,
+    });
+    toast.success("Profile details updated successfully!");
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-bold text-surface-950 mb-4">Owner Profile</h2>
         <div className="flex items-center gap-4 mb-6">
           <div className="w-16 h-16 rounded-full bg-brand-600 flex items-center justify-center text-white text-2xl font-bold shadow-md">
-            {user ? getInitials(user.name) : "S"}
+            {getInitials(name || user?.name || "S")}
           </div>
           <div>
-            <p className="font-bold text-surface-900 text-lg">{user?.name || "SIVARAM R S"}</p>
-            <p className="text-surface-500 text-sm">{user?.email || "ramsiva97465@gmail.com"}</p>
+            <p className="font-bold text-surface-900 text-lg">{name || user?.name || "SIVARAM R S"}</p>
+            <p className="text-surface-500 text-sm">{email || user?.email || "ramsiva97465@gmail.com"}</p>
             <span className="inline-block mt-1 text-xs bg-brand-50 text-brand-700 px-2.5 py-0.5 rounded-full font-semibold">
               Document Owner
             </span>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[
-            ["Full Name", user?.name || "SIVARAM R S", "text"],
-            ["Email Address", user?.email || "ramsiva97465@gmail.com", "email"],
-            ["Organization", "Snapserve Vault", "text"],
-            ["Phone Number", "+91 95971 42465", "text"],
-          ].map(([label, value, type]) => (
-            <div key={label as string}>
-              <label className="block text-xs font-semibold text-surface-700 mb-1.5">{label as string}</label>
-              <input
-                defaultValue={value as string}
-                type={type as string}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-surface-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
-              />
-            </div>
-          ))}
+          <div>
+            <label className="block text-xs font-semibold text-surface-700 mb-1.5">Full Name</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              type="text"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-surface-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-surface-700 mb-1.5">Email Address</label>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-surface-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-surface-700 mb-1.5">Organization</label>
+            <input
+              value={organizationName}
+              onChange={(e) => setOrganizationName(e.target.value)}
+              type="text"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-surface-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-surface-700 mb-1.5">Phone Number</label>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              type="tel"
+              placeholder="+91 98765 43210"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-surface-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
+            />
+          </div>
         </div>
         <button
-          onClick={() => toast.success("Profile details updated!")}
+          onClick={handleSave}
           className="mt-5 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm"
         >
           Save Changes

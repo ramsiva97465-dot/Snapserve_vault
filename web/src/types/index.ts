@@ -1,4 +1,4 @@
-﻿export type DocumentStatus =
+export type DocumentStatus =
   | "DRAFT"
   | "PREPARING"
   | "SENT"
@@ -41,6 +41,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  phone?: string;
   avatarUrl?: string;
   organizationId: string;
   organizationName: string;

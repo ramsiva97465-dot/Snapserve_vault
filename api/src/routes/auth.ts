@@ -31,7 +31,7 @@ const MOCK_DEMO_USER = {
 
 router.post("/signup", async (req, res) => {
   try {
-    const { name, email, password, organizationName } = signupSchema.parse(req.body);
+    const { name, email, password, organizationName, phone } = signupSchema.parse(req.body);
 
     try {
       const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -69,6 +69,7 @@ router.post("/signup", async (req, res) => {
           id: result.user.id,
           name: result.user.name,
           email: result.user.email,
+          phone: phone || "",
           organizationId: result.org.id,
           organizationName: result.org.name,
           role: "OWNER",

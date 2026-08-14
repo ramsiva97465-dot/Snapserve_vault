@@ -20,7 +20,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (data: { name: string; email: string; password: string; organizationName: string }) => Promise<void>;
+  signup: (data: { name: string; email: string; password: string; organizationName: string; phone?: string }) => Promise<void>;
   logout: () => void;
   updateUser: (user: Partial<User>) => void;
 }
