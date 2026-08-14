@@ -53,12 +53,20 @@ const upload = multer({
 
 router.use(authenticate);
 
-// List documents - Instant Response
+// List documents - Strict Account Isolation & Shared Access Filter
 router.get("/", async (req: AuthRequest, res) => {
   const { status, search } = req.query;
+  const userId = req.user!.id;
+  const userOrgId = req.user!.organizationId;
+  const userEmail = (req.user!.email || "").toLowerCase();
 
-  // Serve instantly from local cache for 0ms latency
-  let docs = inMemoryStore.documents;
+  // Filter documents so Account A documents NEVER leak to Account B automatically
+  let docs = inMemoryStore.documents.filter((d) => {
+    const isOwner = d.ownerId === userId || (d.organizationId === userOrgId && d.organizationId !== "00000000-0000-0000-0000-000000000002");
+    const isSharedToEmail = d.signers?.some((s: any) => s.email?.toLowerCase() === userEmail);
+    return isOwner || isSharedToEmail;
+  });
+
   if (status) {
     docs = docs.filter((d) => d.status === status);
   }
@@ -71,7 +79,13 @@ router.get("/", async (req: AuthRequest, res) => {
 
   // Sync from Supabase DB in background
   try {
-    const where: any = { organizationId: req.user!.organizationId };
+    const where: any = {
+      OR: [
+        { ownerId: userId },
+        { organizationId: userOrgId },
+        { signers: { some: { email: userEmail } } },
+      ],
+    };
     if (status) where.status = status;
     const dbDocs = await prisma.document.findMany({
       where,
@@ -83,7 +97,6 @@ router.get("/", async (req: AuthRequest, res) => {
       orderBy: { updatedAt: "desc" },
     });
     if (dbDocs && dbDocs.length > 0) {
-      // Merge DB docs into memory store
       dbDocs.forEach((dbD: any) => {
         const idx = inMemoryStore.documents.findIndex((m) => m.id === dbD.id);
         if (idx !== -1) {
@@ -373,6 +386,43 @@ router.post("/:id/share", async (req: AuthRequest, res) => {
     if (shareType === "EMAIL") {
       if (!recipientEmail) return res.status(400).json({ error: "Recipient email is required" });
 
+      // Grant access to recipient email by adding them to document signers list
+      if (memDoc) {
+        if (!memDoc.signers) memDoc.signers = [];
+        const exists = memDoc.signers.some((s: any) => s.email?.toLowerCase() === recipientEmail.toLowerCase());
+        if (!exists) {
+          memDoc.signers.push({
+            id: `signer-${Date.now()}`,
+            name: recipientName || recipientEmail,
+            email: recipientEmail,
+            status: "PENDING",
+            orderIndex: memDoc.signers.length + 1,
+            documentId: docId,
+            createdAt: new Date().toISOString(),
+          } as any);
+        }
+      }
+
+      try {
+        const dbDoc = await prisma.document.findUnique({ where: { id: docId } });
+        if (dbDoc) {
+          const existingSigner = await prisma.signer.findFirst({
+            where: { documentId: docId, email: recipientEmail },
+          });
+          if (!existingSigner) {
+            await prisma.signer.create({
+              data: {
+                documentId: docId,
+                name: recipientName || recipientEmail,
+                email: recipientEmail,
+                orderIndex: 99,
+                status: "PENDING",
+              },
+            });
+          }
+        }
+      } catch {}
+
       const { sendEmailViaBrevo } = await import("../services/email");
       const result = await sendEmailViaBrevo({
         toEmail: recipientEmail,
@@ -383,7 +433,7 @@ router.post("/:id/share", async (req: AuthRequest, res) => {
         message,
       });
 
-      return res.json(result);
+      return res.json({ ...result, message: `Access granted and email sent to ${recipientEmail}` });
     }
 
     if (shareType === "WHATSAPP") {
