@@ -3,7 +3,7 @@ import axios from "axios";
 const DEFAULT_TOKEN = "demo-session-jwt-token-snapserve";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001/api",
+  baseURL: import.meta.env.VITE_API_URL || "/api",
   timeout: 30000,
 });
 
