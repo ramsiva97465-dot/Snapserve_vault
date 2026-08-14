@@ -1,0 +1,175 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&display=swap");
+@import "tailwindcss";
+
+@theme {
+  /* Brand colors */
+  --color-brand-50: #efeffd;
+  --color-brand-100: #ddddfb;
+  --color-brand-200: #c0c0f8;
+  --color-brand-300: #9898f3;
+  --color-brand-400: #7575eb;
+  --color-brand-500: #6464e0;
+  --color-brand-600: #5b5bd6;
+  --color-brand-700: #4747c2;
+  --color-brand-800: #3838a0;
+  --color-brand-900: #2e2e7e;
+
+  /* Neutral surface palette */
+  --color-surface-50: #fafaf9;
+  --color-surface-100: #f5f4f2;
+  --color-surface-200: #eeece9;
+  --color-surface-300: #e5e3df;
+  --color-surface-400: #c9c7c2;
+  --color-surface-500: #9b978f;
+  --color-surface-600: #6b6560;
+  --color-surface-700: #4f4b46;
+  --color-surface-800: #353230;
+  --color-surface-900: #1f1e1c;
+  --color-surface-950: #1c1917;
+
+  /* Shadows */
+  --shadow-card: 0 0 0 1px rgb(0 0 0 / 0.05), 0 2px 8px rgb(0 0 0 / 0.06);
+  --shadow-card-hover: 0 0 0 1px rgb(0 0 0 / 0.08), 0 4px 16px rgb(0 0 0 / 0.1);
+  --shadow-modal: 0 20px 60px rgb(0 0 0 / 0.15), 0 0 0 1px rgb(0 0 0 / 0.05);
+
+  /* Animations */
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-slide-up: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-scale-in: scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-slide-in-right: slide-in-right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Keyframes - outside @theme */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* shadcn CSS variable tokens — required by login-3 component primitives */
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --primary: #0f172a;
+  --primary-foreground: #f8fafc;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #ef4444;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #0f172a;
+}
+
+/* Base resets */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
+  background-color: #fafaf9;
+  color: #1c1917;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: "Outfit", "Plus Jakarta Sans", sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* PDF Canvas styling */
+.pdf-page-canvas {
+  display: block;
+  background: white;
+}
+
+/* Document field overlay */
+.document-field {
+  position: absolute;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.document-field:active {
+  cursor: grabbing;
+}
+.field-actions {
+  display: none;
+}
+.document-field:hover .field-actions {
+  display: flex;
+}
+
+/* Signature canvas */
+.signature-canvas {
+  cursor: crosshair;
+  background-color: white;
+  border-radius: 0.75rem;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #e5e3df;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c9c7c2;
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid #6464e0;
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: #efeffd;
+  color: #3838a0;
+}
+
+/* Transition defaults */
+a, button {
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}

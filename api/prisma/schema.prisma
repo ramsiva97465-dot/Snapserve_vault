@@ -1,0 +1,406 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum DocumentStatus {
+  DRAFT
+  PREPARING
+  SENT
+  VIEWED
+  PARTIALLY_SIGNED
+  COMPLETED
+  EXPIRED
+  DECLINED
+  CANCELLED
+}
+
+enum SignerStatus {
+  PENDING
+  SENT
+  VIEWED
+  COMPLETED
+  DECLINED
+}
+
+enum FieldType {
+  SIGNATURE
+  INITIALS
+  SEAL
+  TEXT
+  NUMBER
+  DATE
+  CHECKBOX
+  EMAIL
+  COMPANY
+  ADDRESS
+  PHONE
+  DROPDOWN
+  RADIO
+  ATTACHMENT
+  NOTE
+}
+
+enum SignatureType {
+  TYPED
+  DRAWN
+  UPLOADED
+}
+
+enum SigningOrder {
+  SEQUENTIAL
+  PARALLEL
+}
+
+enum AuditAction {
+  DOCUMENT_CREATED
+  DOCUMENT_UPLOADED
+  DOCUMENT_UPDATED
+  DOCUMENT_SENT
+  DOCUMENT_VIEWED
+  DOCUMENT_SIGNED
+  DOCUMENT_COMPLETED
+  DOCUMENT_EXPIRED
+  DOCUMENT_DECLINED
+  DOCUMENT_CANCELLED
+  DOCUMENT_DOWNLOADED
+  SIGNER_ADDED
+  SIGNER_REMOVED
+  SIGNING_LINK_OPENED
+  SIGNING_LINK_REVOKED
+  TERMS_ACCEPTED
+  FIELD_COMPLETED
+  SIGNATURE_ADDED
+  REMINDER_SENT
+  TEMPLATE_CREATED
+}
+
+enum NotificationType {
+  DOCUMENT_SIGNED
+  DOCUMENT_COMPLETED
+  DOCUMENT_VIEWED
+  SIGNING_REMINDER
+  LINK_EXPIRES_SOON
+  DOCUMENT_DECLINED
+}
+
+enum ReminderType {
+  MANUAL
+  AUTO_24H
+  AUTO_3D
+  AUTO_7D
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  organizationMembers OrganizationMember[]
+  ownedDocuments      Document[]           @relation("DocumentOwner")
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+
+  @@map("users")
+}
+
+model Organization {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String
+  logoUrl     String? @map("logo_url")
+  accentColor String? @map("accent_color")
+  plan        String  @default("free")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  members   OrganizationMember[]
+  documents Document[]
+  templates Template[]
+  contacts  Contact[]
+  webhooks  Webhook[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id   String           @id @default(uuid()) @db.Uuid
+  role OrganizationRole @default(MEMBER)
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.Uuid @map("organization_id")
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @db.Uuid @map("user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}
+
+model Document {
+  id              String         @id @default(uuid()) @db.Uuid
+  title           String
+  status          DocumentStatus @default(DRAFT)
+  originalFileUrl String?        @map("original_file_url")
+  signedFileUrl   String?        @map("signed_file_url")
+  signingOrder    SigningOrder    @default(PARALLEL) @map("signing_order")
+  expiresAt       DateTime?      @map("expires_at")
+  pageCount       Int?           @map("page_count")
+  fileSize        Int?           @map("file_size")
+  fileName        String?        @map("file_name")
+
+  owner   User   @relation("DocumentOwner", fields: [ownerId], references: [id])
+  ownerId String @db.Uuid @map("owner_id")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.Uuid @map("organization_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  signers       Signer[]
+  fields        DocumentField[]
+  signingTokens SigningToken[]
+  signatures    Signature[]
+  auditLogs     AuditLog[]
+  reminders     Reminder[]
+  versions      DocumentVersion[]
+
+  @@index([ownerId])
+  @@index([organizationId])
+  @@index([status])
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id            String @id @default(uuid()) @db.Uuid
+  versionNumber Int    @map("version_number")
+  fileUrl       String @map("file_url")
+
+  document   Document @relation(fields: [documentId], references: [id])
+  documentId String   @db.Uuid @map("document_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("document_versions")
+}
+
+model Signer {
+  id         String      @id @default(uuid()) @db.Uuid
+  name       String
+  email      String
+  phone      String?
+  role       String?
+  orderIndex Int         @default(0) @map("order_index")
+  status     SignerStatus @default(PENDING)
+  signedAt   DateTime?   @map("signed_at")
+  viewedAt   DateTime?   @map("viewed_at")
+  color      String?
+
+  document   Document @relation(fields: [documentId], references: [id])
+  documentId String   @db.Uuid @map("document_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  fields        DocumentField[]
+  signingTokens SigningToken[]
+  signatures    Signature[]
+  reminders     Reminder[]
+
+  @@map("signers")
+}
+
+model DocumentField {
+  id           String    @id @default(uuid()) @db.Uuid
+  fieldType    FieldType @map("field_type")
+  fieldName    String    @map("field_name")
+  pageNumber   Int       @map("page_number")
+  x            Float
+  y            Float
+  width        Float
+  height       Float
+  isRequired   Boolean   @default(true) @map("is_required")
+  defaultValue String?   @map("default_value")
+  placeholder  String?
+  properties   Json?
+
+  document   Document @relation(fields: [documentId], references: [id])
+  documentId String   @db.Uuid @map("document_id")
+
+  signer   Signer? @relation(fields: [signerId], references: [id])
+  signerId String? @db.Uuid @map("signer_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  signature Signature?
+
+  @@index([documentId])
+  @@map("document_fields")
+}
+
+model SigningToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  token      String    @unique
+  expiresAt  DateTime? @map("expires_at")
+  usedAt     DateTime? @map("used_at")
+  revokedAt  DateTime? @map("revoked_at")
+  ipAddress  String?   @map("ip_address")
+  userAgent  String?   @map("user_agent")
+
+  document   Document @relation(fields: [documentId], references: [id])
+  documentId String   @db.Uuid @map("document_id")
+
+  signer   Signer @relation(fields: [signerId], references: [id])
+  signerId String @db.Uuid @map("signer_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([token])
+  @@map("signing_tokens")
+}
+
+model Signature {
+  id            String        @id @default(uuid()) @db.Uuid
+  signatureType SignatureType @map("signature_type")
+  value         String?
+  imageUrl      String?       @map("image_url")
+  imageData     String?       @map("image_data")
+
+  document   Document @relation(fields: [documentId], references: [id])
+  documentId String   @db.Uuid @map("document_id")
+
+  signer   Signer @relation(fields: [signerId], references: [id])
+  signerId String @db.Uuid @map("signer_id")
+
+  field    DocumentField? @relation(fields: [fieldId], references: [id])
+  fieldId  String?        @unique @db.Uuid @map("field_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("signatures")
+}
+
+model AuditLog {
+  id          String      @id @default(uuid()) @db.Uuid
+  action      AuditAction
+  actorName   String?     @map("actor_name")
+  actorEmail  String?     @map("actor_email")
+  metadata    Json?
+  ipAddress   String?     @map("ip_address")
+
+  document   Document? @relation(fields: [documentId], references: [id])
+  documentId String?   @db.Uuid @map("document_id")
+
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String? @db.Uuid @map("user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([documentId])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  type      NotificationType
+  message   String
+  isRead    Boolean          @default(false) @map("is_read")
+  metadata  Json?
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @db.Uuid @map("user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model Template {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  fileUrl     String  @map("file_url")
+  fieldsConfig Json?  @map("fields_config")
+  usageCount  Int     @default(0) @map("usage_count")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.Uuid @map("organization_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("templates")
+}
+
+model Contact {
+  id      String  @id @default(uuid()) @db.Uuid
+  name    String
+  email   String
+  phone   String?
+  company String?
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.Uuid @map("organization_id")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  lastSignedAt DateTime? @map("last_signed_at")
+
+  @@unique([organizationId, email])
+  @@map("contacts")
+}
+
+model Reminder {
+  id          String       @id @default(uuid()) @db.Uuid
+  type        ReminderType
+  scheduledAt DateTime     @map("scheduled_at")
+  sentAt      DateTime?    @map("sent_at")
+
+  document   Document @relation(fields: [documentId], references: [id])
+  documentId String   @db.Uuid @map("document_id")
+
+  signer   Signer? @relation(fields: [signerId], references: [id])
+  signerId String? @db.Uuid @map("signer_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("reminders")
+}
+
+model Webhook {
+  id       String   @id @default(uuid()) @db.Uuid
+  url      String
+  events   Json
+  secret   String
+  isActive Boolean  @default(true) @map("is_active")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.Uuid @map("organization_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("webhooks")
+}
