@@ -11,6 +11,7 @@ const signupSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   organizationName: z.string().min(2),
+  phone: z.string().optional(),
 });
 
 const loginSchema = z.object({
