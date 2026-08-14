@@ -4,6 +4,7 @@ import { useAuthStore } from "@/stores/authStore";
 
 // Auth
 import LoginPage from "@/pages/auth/LoginPage";
+import SignupPage from "@/pages/auth/SignupPage";
 
 // Public signing pages
 import SigningPage from "@/pages/signing/SigningPage";
@@ -48,7 +49,7 @@ export default function App() {
         />
         <Route
           path="/signup"
-          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <SignupPage />}
         />
 
         {/* Public account-less signing routes */}
