@@ -1,0 +1,10 @@
+{
+  "name": "snapserve-vault-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Snapserve Vault Unified Monorepo (Single Service Deployment)",
+  "scripts": {
+    "build": "npm --prefix web install && npm --prefix web run build && npm --prefix api install && npm --prefix api run build",
+    "start": "npm --prefix api start"
+  }
+}

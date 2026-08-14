@@ -65,10 +65,28 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: "Route not found" });
-});
+import fs from "fs";
+
+// Static files for frontend build (Single Service deployment)
+const webDistPath = path.resolve(__dirname, "../../web/dist");
+if (fs.existsSync(webDistPath)) {
+  console.log(`📦 Serving web frontend from ${webDistPath}`);
+  app.use(express.static(webDistPath));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api") || req.path.startsWith("/uploads") || req.path === "/health") {
+      return next();
+    }
+    res.sendFile(path.join(webDistPath, "index.html"));
+  });
+} else {
+  // Fallback 404 handler if web/dist is not built
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/api") || req.path.startsWith("/uploads") || req.path === "/health") {
+      return next();
+    }
+    res.status(404).json({ error: "Frontend build not found. Run 'npm run build' in /web directory." });
+  });
+}
 
 // Error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
