@@ -42,6 +42,12 @@ export default function App() {
         }}
       />
       <Routes>
+        {/* Root redirect */}
+        <Route
+          path="/"
+          element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />}
+        />
+
         {/* Auth routes */}
         <Route
           path="/login"
