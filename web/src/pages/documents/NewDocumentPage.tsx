@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Upload, FileText, X, Check, ChevronRight, ArrowLeft, Plus, User, Users, UserPlus, Pen } from "lucide-react";
 import { toast } from "sonner";
