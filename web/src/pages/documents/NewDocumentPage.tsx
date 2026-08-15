@@ -464,7 +464,13 @@ export default function NewDocumentPage() {
 
                 {/* Add signer form */}
                 {addingMode === "external" && (
-                  <div className="border border-brand-200 bg-brand-50/30 rounded-xl p-4 mb-4 animate-slide-up">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleAddSigner();
+                    }}
+                    className="border border-brand-200 bg-brand-50/30 rounded-xl p-4 mb-4 animate-slide-up"
+                  >
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-semibold text-surface-800">
                         {signers.length === 0 ? "Add Signer 1 (You / Owner)" : `Add Signer ${signers.length + 1} (Client / Guest)`}
@@ -486,6 +492,12 @@ export default function NewDocumentPage() {
                         <input
                           value={newSigner.name}
                           onChange={(e) => setNewSigner((p) => ({ ...p, name: e.target.value }))}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddSigner();
+                            }
+                          }}
                           className="w-full px-3 py-2 rounded-lg border border-surface-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
                           placeholder={signers.length === 0 ? "Your Name (e.g. SIVARAM R S)" : "Client / Guest Name"}
                         />
@@ -496,20 +508,26 @@ export default function NewDocumentPage() {
                           value={newSigner.email}
                           onChange={(e) => setNewSigner((p) => ({ ...p, email: e.target.value }))}
                           type="email"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddSigner();
+                            }
+                          }}
                           className="w-full px-3 py-2 rounded-lg border border-surface-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
                           placeholder={signers.length === 0 ? "your.email@example.com" : "client@company.com"}
                         />
                       </div>
                     </div>
                     <div className="flex gap-2 mt-3">
-                      <button onClick={handleAddSigner} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold">
+                      <button type="submit" className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold">
                         <Check size={14} /> Add Signer
                       </button>
-                      <button onClick={() => { setAddingMode(null); setNewSigner({ name: "", email: "" }); }} className="px-4 py-2 rounded-lg border border-surface-300 text-sm text-surface-600 hover:bg-surface-50">
+                      <button type="button" onClick={() => { setAddingMode(null); setNewSigner({ name: "", email: "" }); }} className="px-4 py-2 rounded-lg border border-surface-300 text-sm text-surface-600 hover:bg-surface-50">
                         Cancel
                       </button>
                     </div>
-                  </div>
+                  </form>
                 )}
 
                 {!addingMode && (
