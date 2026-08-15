@@ -72,7 +72,7 @@ export default function DocumentDetailPage() {
         const FALLBACK_PDF = "https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf";
         const rawUrl: string | undefined = res.data.originalFileUrl;
         const resolvedUrl = rawUrl && rawUrl.length > 0
-          ? rawUrl.startsWith("http") ? rawUrl : `http://localhost:3001${rawUrl}`
+          ? rawUrl.startsWith("http") ? rawUrl : `${window.location.origin}${rawUrl}`
           : FALLBACK_PDF;
 
         try {
