@@ -67,7 +67,7 @@ export default function SigningPage() {
           rawUrl && rawUrl.length > 0
             ? rawUrl.startsWith("http")
               ? rawUrl
-              : `http://localhost:3001${rawUrl}`
+              : `${window.location.origin}${rawUrl}`
             : FALLBACK_PDF;
 
         try {
