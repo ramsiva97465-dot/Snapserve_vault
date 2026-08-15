@@ -309,7 +309,14 @@ export default function NewDocumentPage() {
                 </button>
 
                 <button
-                  onClick={() => { setSigningMode("BOTH"); }}
+                  onClick={() => {
+                    setSigningMode("BOTH");
+                    setAddingMode("external");
+                    setNewSigner({
+                      name: user?.name || "SIVARAM R S",
+                      email: user?.email || "ramsiva97465@gmail.com",
+                    });
+                  }}
                   className="group flex flex-col items-center gap-4 p-6 rounded-2xl border-2 border-surface-200 hover:border-emerald-400 hover:bg-emerald-50/30 transition-all text-left"
                 >
                   <div className="w-14 h-14 rounded-2xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
@@ -439,7 +446,20 @@ export default function NewDocumentPage() {
                 )}
 
                 {!addingMode && (
-                  <button onClick={() => setAddingMode("external")} className="flex items-center gap-2 w-full py-3 px-4 rounded-xl border-2 border-dashed border-surface-300 hover:border-brand-300 hover:bg-brand-50/20 text-sm text-surface-500 hover:text-brand-600 transition-all font-medium">
+                  <button
+                    onClick={() => {
+                      setAddingMode("external");
+                      if (signers.length === 0) {
+                        setNewSigner({
+                          name: user?.name || "SIVARAM R S",
+                          email: user?.email || "ramsiva97465@gmail.com",
+                        });
+                      } else {
+                        setNewSigner({ name: "", email: "" });
+                      }
+                    }}
+                    className="flex items-center gap-2 w-full py-3 px-4 rounded-xl border-2 border-dashed border-surface-300 hover:border-brand-300 hover:bg-brand-50/20 text-sm text-surface-500 hover:text-brand-600 transition-all font-medium"
+                  >
                     <Plus size={16} /> Add Signer {signers.length + 1}
                   </button>
                 )}
