@@ -20,13 +20,24 @@ interface NewSigner {
 export default function NewDocumentPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [step, setStep] = useState<Step>(1);
+
+  // Restore state from sessionStorage on page refresh
+  const [step, setStep] = useState<Step>(() => {
+    const saved = sessionStorage.getItem("snapserve_new_doc_step");
+    return saved ? (parseInt(saved, 10) as Step) : 1;
+  });
   const [isLoading, setIsLoading] = useState(false);
-  const [documentId, setDocumentId] = useState<string | null>(null);
-  const [documentTitle, setDocumentTitle] = useState("Untitled Document");
+  const [documentId, setDocumentId] = useState<string | null>(() => {
+    return sessionStorage.getItem("snapserve_new_doc_id") || null;
+  });
+  const [documentTitle, setDocumentTitle] = useState(() => {
+    return sessionStorage.getItem("snapserve_new_doc_title") || "Untitled Document";
+  });
 
   // Step 1.5 — Signing mode
-  const [signingMode, setSigningMode] = useState<SigningMode>(null);
+  const [signingMode, setSigningMode] = useState<SigningMode>(() => {
+    return (sessionStorage.getItem("snapserve_new_doc_mode") as SigningMode) || null;
+  });
 
   // Step 1 — Upload
   const [file, setFile] = useState<File | null>(null);
@@ -35,9 +46,32 @@ export default function NewDocumentPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Step 2 — Signers
-  const [signers, setSigners] = useState<(Signer & { color: string })[]>([]);
+  const [signers, setSigners] = useState<(Signer & { color: string })[]>(() => {
+    const saved = sessionStorage.getItem("snapserve_new_doc_signers");
+    if (saved) {
+      try { return JSON.parse(saved); } catch {}
+    }
+    return [];
+  });
   const [newSigner, setNewSigner] = useState<NewSigner>({ name: "", email: "" });
   const [addingMode, setAddingMode] = useState<null | "external">(null);
+
+  // Auto-sync state to sessionStorage
+  useEffect(() => {
+    if (documentId) sessionStorage.setItem("snapserve_new_doc_id", documentId);
+    sessionStorage.setItem("snapserve_new_doc_step", String(step));
+    sessionStorage.setItem("snapserve_new_doc_title", documentTitle);
+    if (signingMode) sessionStorage.setItem("snapserve_new_doc_mode", signingMode);
+    sessionStorage.setItem("snapserve_new_doc_signers", JSON.stringify(signers));
+  }, [documentId, step, documentTitle, signingMode, signers]);
+
+  const clearDocSession = () => {
+    sessionStorage.removeItem("snapserve_new_doc_id");
+    sessionStorage.removeItem("snapserve_new_doc_step");
+    sessionStorage.removeItem("snapserve_new_doc_title");
+    sessionStorage.removeItem("snapserve_new_doc_mode");
+    sessionStorage.removeItem("snapserve_new_doc_signers");
+  };
 
   const steps = [
     { num: 1, label: "Upload" },
@@ -206,6 +240,7 @@ export default function NewDocumentPage() {
 
   const handleGoToPrepare = () => {
     if (!documentId) return;
+    clearDocSession();
     navigate(`/documents/${documentId}/prepare?mode=${signingMode || "BOTH"}`);
   };
 
