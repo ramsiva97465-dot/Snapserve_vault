@@ -742,16 +742,22 @@ export default function PrepareDocumentPage() {
               const savedAssets = getSavedAssets();
               const asset = savedAssets.find((a) => a.id === assetId);
               if (asset) {
+                const isImg = asset.data.startsWith("data:image");
+                const valObj = isImg ? { imageData: asset.data, signatureType: "DRAWN" } : { value: asset.data, signatureType: "TYPED" };
                 setFields((prev) =>
                   prev.map((f) => {
                     if (f.id === selectedField.id) {
-                      return asset.data.startsWith("data:image")
+                      return isImg
                         ? { ...f, imageData: asset.data, value: undefined }
-                        : { ...f, value: asset.data };
+                        : { ...f, value: asset.data, imageData: undefined };
                     }
                     return f;
                   })
                 );
+                setSelfSignValues((prev) => ({
+                  ...prev,
+                  [selectedField.id]: valObj,
+                }));
                 toast.success(`Applied "${asset.name}" to field!`);
               }
               e.target.value = "";
@@ -1135,7 +1141,9 @@ export default function PrepareDocumentPage() {
                 const color = signer?.color || getSignerColor(Math.max(0, signerIndex));
                 const isSelected = selectedFieldId === field.id;
                 const signedValue = selfSignValues[field.id]; // filled value
-                const hasValue = !!(signedValue && (signedValue.imageData || signedValue.value));
+                const displayImageData = signedValue?.imageData || field.imageData;
+                const displayValue = signedValue?.value || field.value;
+                const hasValue = !!(displayImageData || displayValue);
 
                 return (
                   <div
@@ -1165,9 +1173,9 @@ export default function PrepareDocumentPage() {
                     {/* Content inside field */}
                     {hasValue ? (
                       <div className="flex items-center justify-center h-full w-full px-1 overflow-hidden relative bg-transparent">
-                        {signedValue.imageData ? (
+                        {displayImageData ? (
                           <img
-                            src={signedValue.imageData}
+                            src={displayImageData}
                             alt="Signed"
                             className="max-w-full max-h-full object-contain p-0.5 bg-transparent"
                             style={{
@@ -1185,7 +1193,7 @@ export default function PrepareDocumentPage() {
                               fontStyle: field.properties?.fontStyle || "normal",
                             }}
                           >
-                            {signedValue.value === "checked" ? "✓ Checked" : signedValue.value}
+                            {displayValue === "checked" ? "✓ Checked" : displayValue}
                           </span>
                         )}
                         <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-emerald-600 border border-white flex items-center justify-center shadow-sm">
