@@ -359,9 +359,15 @@ router.post("/:id/send", async (req: AuthRequest, res) => {
     const signerLinks: any[] = [];
     const memTokens: any[] = [];
 
+    const rawOrigin = (req.headers.origin || req.headers.referer || "").replace(/\/$/, "");
+    let baseUrl = process.env.APP_URL || "https://snapservevault-production.up.railway.app";
+    if (rawOrigin && rawOrigin !== "*" && rawOrigin.startsWith("http")) {
+      baseUrl = rawOrigin;
+    }
+
     for (const signer of docSigners) {
       const tokenString = crypto.randomBytes(32).toString("hex");
-      const signingUrl = `${process.env.CORS_ORIGIN || "http://localhost:5173"}/sign/${tokenString}`;
+      const signingUrl = `${baseUrl}/sign/${tokenString}`;
 
       signerLinks.push({ signer, token: tokenString, signingUrl });
       memTokens.push({

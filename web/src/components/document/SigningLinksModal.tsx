@@ -31,7 +31,23 @@ export default function SigningLinksModal({ links, documentId, documentTitle, on
     return initial;
   });
 
-  const copyLink = async (url: string, id: string) => {
+  const getCleanUrl = (url: string) => {
+    if (!url) return "";
+    let clean = url.trim();
+    if (clean.startsWith("*")) {
+      clean = clean.substring(1);
+    }
+    if (clean.startsWith("http://") || clean.startsWith("https://")) {
+      return clean;
+    }
+    if (!clean.startsWith("/")) {
+      clean = "/" + clean;
+    }
+    return `${window.location.origin}${clean}`;
+  };
+
+  const copyLink = async (rawUrl: string, id: string) => {
+    const url = getCleanUrl(rawUrl);
     await navigator.clipboard.writeText(url);
     setCopiedId(id);
     toast.success("Link copied to clipboard!");
@@ -108,6 +124,7 @@ export default function SigningLinksModal({ links, documentId, documentTitle, on
 
             const currentEmail = emailAddresses[link.signer.id] ?? link.signer.email ?? "";
             const currentPhone = phoneNumbers[link.signer.id] ?? link.signer.phone ?? "";
+            const cleanSigningUrl = getCleanUrl(link.signingUrl);
 
             return (
               <div key={link.signer.id} className="rounded-xl border border-surface-200 p-4 space-y-3 bg-white">
@@ -136,17 +153,17 @@ export default function SigningLinksModal({ links, documentId, documentTitle, on
                     {/* Copy Link Bar */}
                     <div className="flex items-center gap-2">
                       <div className="flex-1 px-3 py-1.5 rounded-lg bg-surface-50 border border-surface-200 font-mono text-[11px] text-surface-600 truncate">
-                        {link.signingUrl}
+                        {cleanSigningUrl}
                       </div>
                       <button
-                        onClick={() => copyLink(link.signingUrl, link.signer.id)}
+                        onClick={() => copyLink(cleanSigningUrl, link.signer.id)}
                         className="p-1.5 rounded-lg border border-surface-300 hover:bg-surface-50 text-surface-600 hover:text-surface-900 transition-colors flex-shrink-0"
                         title="Copy link"
                       >
                         {copiedId === link.signer.id ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                       </button>
                       <a
-                        href={link.signingUrl}
+                        href={cleanSigningUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-1.5 rounded-lg border border-surface-300 hover:bg-surface-50 text-surface-600 hover:text-surface-900 transition-colors flex-shrink-0"
@@ -174,7 +191,7 @@ export default function SigningLinksModal({ links, documentId, documentTitle, on
                           className="w-full px-2.5 py-1.5 rounded-lg border border-blue-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                         <button
-                          onClick={() => handleSendEmail(link.signer.id, currentEmail, link.signingUrl)}
+                          onClick={() => handleSendEmail(link.signer.id, currentEmail, cleanSigningUrl)}
                           disabled={sendingEmailId === link.signer.id}
                           className="w-full py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
                         >
@@ -204,7 +221,7 @@ export default function SigningLinksModal({ links, documentId, documentTitle, on
                           className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                         />
                         <button
-                          onClick={() => handleOpenWhatsApp(currentPhone, link.signingUrl)}
+                          onClick={() => handleOpenWhatsApp(currentPhone, cleanSigningUrl)}
                           className="w-full py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                         >
                           <MessageSquare size={12} /> Send WhatsApp

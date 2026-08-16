@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import * as pdfjs from "pdfjs-dist";
 import { toast } from "sonner";
-import { Check, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, AlertCircle, Loader2 } from "lucide-react";
+import { Check, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, AlertCircle, Loader2, Download } from "lucide-react";
 import api from "@/lib/api";
 import { DocumentField, Signer, FIELD_LABELS } from "@/types";
 import { cn } from "@/lib/utils";
@@ -266,13 +266,34 @@ export default function SigningPage() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-surface-700">{completedCount}/{fields.length}</span>
-          <div className="w-24 h-1.5 bg-surface-200 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full bg-brand-500 transition-all"
-              style={{ width: `${progress}%` }}
-            />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              if (pdfUrl && pdfUrl.startsWith("data:")) {
+                const a = document.createElement("a");
+                a.href = pdfUrl;
+                a.download = `${docTitle || "Document"}.pdf`;
+                a.click();
+                toast.success("Document downloaded!");
+              } else if (pdfUrl) {
+                window.open(pdfUrl.startsWith("http") ? pdfUrl : `${window.location.origin}${pdfUrl}`, "_blank");
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-surface-300 hover:bg-surface-50 text-xs font-semibold text-surface-700 transition-colors"
+            title="Download Document PDF"
+          >
+            <Download size={14} className="text-surface-600" />
+            <span className="hidden sm:inline">Download PDF</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-surface-700">{completedCount}/{fields.length}</span>
+            <div className="w-24 h-1.5 bg-surface-200 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-brand-500 transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
         </div>
       </header>
