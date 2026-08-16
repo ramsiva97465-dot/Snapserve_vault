@@ -102,8 +102,14 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Snapserve.ai API running on http://localhost:${PORT}`);
+import http from "http";
+import { initSocket } from "./utils/socket";
+
+const server = http.createServer(app);
+initSocket(server);
+
+server.listen(PORT, () => {
+  console.log(`🚀 Snapserve.ai API & WebSockets running on http://localhost:${PORT}`);
 });
 
 export default app;

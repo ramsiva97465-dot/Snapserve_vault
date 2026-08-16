@@ -25,8 +25,18 @@ import DraftsPage from "@/pages/documents/DraftsPage";
 import CompletedPage from "@/pages/documents/CompletedPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
 
+import { useEffect } from "react";
+import { getSocket } from "@/lib/socket";
+
 export default function App() {
   const { isAuthenticated } = useAuthStore();
+
+  // Initialize WebSockets for real-time live notifications
+  useEffect(() => {
+    if (isAuthenticated) {
+      getSocket();
+    }
+  }, [isAuthenticated]);
 
   return (
     <BrowserRouter>

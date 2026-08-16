@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { prisma } from "../utils/prisma";
 import { logAudit } from "../utils/audit";
 import { inMemoryStore } from "../utils/store";
+import { notifyDocumentSigned } from "../utils/socket";
 import multer from "multer";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
@@ -318,13 +319,22 @@ router.post("/token/:token/complete", async (req: Request, res: Response) => {
       if (foundDoc) {
         foundDoc.status = "COMPLETED";
         if (foundDoc.signers && foundDoc.signers.length > 0) {
-          foundDoc.signers.forEach((s: any) => {
-            s.status = "COMPLETED";
-          });
+          const signerToUpdate = foundDoc.signers.find((s: any) => s.id === foundToken?.signerId) || foundDoc.signers[foundDoc.signers.length - 1];
+          if (signerToUpdate) {
+            signerToUpdate.status = "SIGNED";
+            signerToUpdate.signedAt = new Date().toISOString();
+          }
         }
-        return res.json({ message: "Signing completed successfully", documentId: foundDoc.id, allComplete: true });
+        notifyDocumentSigned({
+          documentId: foundDoc.id,
+          documentTitle: foundDoc.title || "Document",
+          signerName: foundDoc.signers?.[1]?.name || foundDoc.signers?.[0]?.name || "Client",
+          signerEmail: foundDoc.signers?.[1]?.email || foundDoc.signers?.[0]?.email || "",
+          status: "COMPLETED",
+        });
+        return res.json({ message: "Signing complete", document: foundDoc });
       }
-      return res.json({ message: "Signing completed successfully", documentId: "demo-doc-1", allComplete: true });
+      return res.status(404).json({ error: "Signing token not found" });
     }
 
     if (!signingToken || signingToken.revokedAt || signingToken.usedAt) {
@@ -338,6 +348,35 @@ router.post("/token/:token/complete", async (req: Request, res: Response) => {
     const signedFieldIds = signingToken.document.signatures
       .filter((s: any) => s.signerId === signingToken.signerId)
       .map((s: any) => s.fieldId);
+
+    // Mark signer as COMPLETED
+    await prisma.signer.update({
+      where: { id: signingToken.signerId },
+      data: { status: "COMPLETED", signedAt: new Date() },
+    });
+
+    await prisma.signingToken.update({
+      where: { id: signingToken.id },
+      data: { usedAt: new Date() },
+    });
+
+    const allSigners = signingToken.document.signers;
+    const remainingSigners = allSigners.filter((s: any) => s.id !== signingToken.signerId && s.status !== "COMPLETED");
+    const allSigned = remainingSigners.length === 0;
+
+    const newDocStatus = allSigned ? "COMPLETED" : "SENT";
+    await prisma.document.update({
+      where: { id: signingToken.documentId },
+      data: { status: newDocStatus },
+    });
+
+    notifyDocumentSigned({
+      documentId: signingToken.documentId,
+      documentTitle: signingToken.document.title || "Document",
+      signerName: signingToken.signer.name || "Client",
+      signerEmail: signingToken.signer.email,
+      status: newDocStatus,
+    });
 
     const unsignedRequired = requiredFields.filter(
       (f: any) => !signedFieldIds.includes(f.id)
