@@ -63,32 +63,49 @@ export async function sendEmailViaBrevo({
     return { success: true, message: "Email simulated! Add BREVO_API_KEY to api/.env to send live emails." };
   }
 
-  try {
-    const senderEmail = process.env.BREVO_SENDER_EMAIL || "ramsiva97465@gmail.com";
-    const senderName = process.env.BREVO_SENDER_NAME || "SnapServe Vault";
+  const senders = [
+    {
+      email: process.env.BREVO_SENDER_EMAIL_1 || process.env.BREVO_SENDER_EMAIL || "ramsiva97465@gmail.com",
+      name: process.env.BREVO_SENDER_NAME || "SnapServe Vault",
+    },
+    {
+      email: process.env.BREVO_SENDER_EMAIL_2 || "sivaramsiva605@gmail.com",
+      name: process.env.BREVO_SENDER_NAME || "SnapServe Vault",
+    },
+    {
+      email: process.env.BREVO_SENDER_EMAIL_3 || "snapserve.ai@gmail.com",
+      name: process.env.BREVO_SENDER_NAME || "SnapServe Vault",
+    },
+  ];
 
-    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "api-key": apiKey,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        sender: { name: senderName, email: senderEmail },
-        to: [{ email: toEmail, name: toName || toEmail }],
-        subject,
-        htmlContent,
-      }),
-    });
+  let lastError = "";
+  for (const sender of senders) {
+    try {
+      const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "api-key": apiKey,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          sender,
+          to: [{ email: toEmail, name: toName || toEmail }],
+          subject,
+          htmlContent,
+        }),
+      });
 
-    const data: any = await res.json();
-    if (res.ok) {
-      return { success: true, message: "Email sent successfully via Brevo API! 📧" };
+      const data: any = await res.json();
+      if (res.ok) {
+        return { success: true, message: `Email sent successfully via Brevo API (${sender.email})! 📧` };
+      }
+      lastError = data.message || "Failed to send email via Brevo API";
+      console.warn(`Brevo email try failed for sender ${sender.email}:`, data);
+    } catch (err: any) {
+      lastError = err.message || "Network error";
     }
-    return { success: false, message: data.message || "Failed to send email via Brevo API" };
-  } catch (error: any) {
-    console.error("Brevo Email Error:", error);
-    return { success: false, message: error.message || "Failed to send email via Brevo API" };
   }
+
+  return { success: false, message: lastError || "Failed to send email via Brevo API" };
 }
