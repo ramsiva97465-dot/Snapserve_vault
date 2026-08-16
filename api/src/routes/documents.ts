@@ -91,9 +91,12 @@ async function renderFieldOnPdf(
 ) {
   try {
     const { rgb } = await import("pdf-lib");
-    // Web editor canvas dimensions are ~794 x 1123 (A4 pixel representation)
-    const scaleX = pageWidth / 794;
-    const scaleY = pageHeight / 1123;
+    // Calculate exact container bounds matching web canvas for 1:1 pixel accuracy
+    const containerW = field.containerWidth || field.canvasWidth || (field.x > 600 ? 794 : pageWidth);
+    const containerH = field.containerHeight || field.canvasHeight || (field.y > 900 ? 1123 : pageHeight);
+
+    const scaleX = pageWidth / containerW;
+    const scaleY = pageHeight / containerH;
 
     const fieldX = (field.x || 0) * scaleX;
     const fieldW = (field.width || 120) * scaleX;
@@ -126,21 +129,21 @@ async function renderFieldOnPdf(
         console.warn("Failed to embed signature image on PDF:", imgErr);
       }
     } else if (value) {
-      // 2. EMAIL, DATE, TEXT, COMPANY, PHONE, ADDRESS, NUMBER -> Draw white capsule background so text NEVER overlaps on signatures!
+      // 2. EMAIL, DATE, TEXT, COMPANY, PHONE, ADDRESS, NUMBER -> Draw clean crisp text without outer gray boxes
+      const textStr = String(value);
+      const fontSize = Math.max(9, Math.min(12, fieldH * 0.45));
+
       page.drawRectangle({
         x: fieldX,
         y: fieldY,
         width: fieldW,
         height: fieldH,
         color: rgb(1, 1, 1),
-        borderColor: rgb(0.85, 0.88, 0.92),
-        borderWidth: 0.5,
+        borderWidth: 0,
       });
 
-      const textStr = String(value);
-      const fontSize = Math.max(8, Math.min(11, fieldH * 0.45));
       page.drawText(textStr, {
-        x: fieldX + 4,
+        x: fieldX + 2,
         y: fieldY + (fieldH - fontSize) / 2,
         size: fontSize,
         font,

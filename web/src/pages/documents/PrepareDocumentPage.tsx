@@ -377,8 +377,10 @@ export default function PrepareDocumentPage() {
   // Add field directly at center (or via tap on mobile)
   const addFieldOnPage = (fieldType: FieldType) => {
     const size = FIELD_SIZES[fieldType];
-    const x = Math.max(20, (pageSize.width / scale - size.width) / 2);
-    const y = Math.max(40, (pageSize.height / scale - size.height) / 3);
+    const unscaledW = pageSize.width / scale;
+    const unscaledH = pageSize.height / scale;
+    const x = Math.max(20, (unscaledW - size.width) / 2);
+    const y = Math.max(40, (unscaledH - size.height) / 3);
 
     const newField: PlacedField = {
       id: `temp-${Date.now()}`,
@@ -391,6 +393,8 @@ export default function PrepareDocumentPage() {
       y,
       width: size.width,
       height: size.height,
+      containerWidth: unscaledW,
+      containerHeight: unscaledH,
       isRequired: true,
       createdAt: new Date().toISOString(),
       signer: signers.find((s) => s.id === selectedSignerId),
@@ -413,6 +417,9 @@ export default function PrepareDocumentPage() {
     const y = (e.clientY - rect.top) / scale;
     const size = FIELD_SIZES[fieldType];
 
+    const unscaledW = pageSize.width / scale;
+    const unscaledH = pageSize.height / scale;
+
     const newField: PlacedField = {
       id: `temp-${Date.now()}`,
       documentId: id!,
@@ -424,6 +431,8 @@ export default function PrepareDocumentPage() {
       y,
       width: size.width,
       height: size.height,
+      containerWidth: unscaledW,
+      containerHeight: unscaledH,
       isRequired: true,
       createdAt: new Date().toISOString(),
       signer: signers.find((s) => s.id === selectedSignerId),
