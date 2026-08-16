@@ -108,8 +108,10 @@ export default function PrepareDocumentPage() {
   const [newSignerEmail, setNewSignerEmail] = useState("");
   const [addingSignerLoading, setAddingSignerLoading] = useState(false);
 
-  // PDF state
+  // PDF & Image state
   const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [isImageDoc, setIsImageDoc] = useState(false);
+  const [imageDocUrl, setImageDocUrl] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageCount, setPageCount] = useState(1);
   const [scale, setScale] = useState(1.0);
@@ -190,11 +192,15 @@ export default function PrepareDocumentPage() {
           setSelectedSignerId(res.data.signers[0].id);
         }
 
-        // Resolve PDF loading
+        // Resolve PDF or Image document loading
         const rawUrl: string | null | undefined = res.data.originalFileUrl;
 
         try {
-          if (rawUrl && rawUrl.startsWith("data:")) {
+          if (rawUrl && (rawUrl.startsWith("data:image/") || /\.(png|jpe?g|webp|gif)$/i.test(rawUrl))) {
+            setIsImageDoc(true);
+            setImageDocUrl(rawUrl.startsWith("http") || rawUrl.startsWith("data:") ? rawUrl : `${window.location.origin}${rawUrl}`);
+            setPageCount(1);
+          } else if (rawUrl && rawUrl.startsWith("data:")) {
             const base64 = rawUrl.split(",")[1] || rawUrl;
             const binary = atob(base64);
             const bytes = new Uint8Array(binary.length);
@@ -211,7 +217,7 @@ export default function PrepareDocumentPage() {
             setPageCount(loadedPdf.numPages);
           }
         } catch (pdfErr) {
-          console.error("PDF load error:", pdfErr);
+          console.error("Document load error:", pdfErr);
         }
       } catch (err) {
         console.error("Document load error:", err);
@@ -1288,10 +1294,12 @@ export default function PrepareDocumentPage() {
                 />
               ))}
 
-              {!pdfDoc ? (
+              {!pdfDoc && !isImageDoc ? (
                 <div style={{ width: pageSize.width, height: pageSize.height }} className="bg-white flex items-center justify-center">
-                  <p className="text-surface-400 text-sm">PDF preview rendering...</p>
+                  <p className="text-surface-400 text-sm">Document preview rendering...</p>
                 </div>
+              ) : isImageDoc ? (
+                <img src={imageDocUrl || ""} alt="Document" className="w-full h-full object-contain block bg-white" />
               ) : (
                 <canvas ref={canvasRef} className="pdf-page-canvas block" />
               )}
