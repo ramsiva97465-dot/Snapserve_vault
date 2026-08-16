@@ -84,7 +84,15 @@ export default function PrepareDocumentPage() {
   // Self-sign modal state (used when signingMode === "SELF")
   const [showSelfSignModal, setShowSelfSignModal] = useState(false);
   const [selfSignFieldIndex, setSelfSignFieldIndex] = useState(0);
-  const [selfSignValues, setSelfSignValues] = useState<Record<string, { value?: string; imageData?: string; signatureType?: string }>>({});
+  // Restore selfSignValues & fields from sessionStorage on refresh
+  const [selfSignValues, setSelfSignValues] = useState<Record<string, { value?: string; imageData?: string; signatureType?: string }>>(() => {
+    if (!id) return {};
+    const saved = sessionStorage.getItem(`snapserve_prepare_values_${id}`);
+    if (saved) {
+      try { return JSON.parse(saved); } catch {}
+    }
+    return {};
+  });
   const [selfSigning, setSelfSigning] = useState(false);
   const [selfSignDone, setSelfSignDone] = useState(false); // true after all fields signed
 
@@ -114,6 +122,17 @@ export default function PrepareDocumentPage() {
   const draggingFieldId = useRef<string | null>(null);
   const dragOffset = useRef({ x: 0, y: 0 });
 
+  // Auto-sync fields and values to sessionStorage on change
+  useEffect(() => {
+    if (!id) return;
+    if (fields.length > 0) {
+      sessionStorage.setItem(`snapserve_prepare_fields_${id}`, JSON.stringify(fields));
+    }
+    if (Object.keys(selfSignValues).length > 0) {
+      sessionStorage.setItem(`snapserve_prepare_values_${id}`, JSON.stringify(selfSignValues));
+    }
+  }, [id, fields, selfSignValues]);
+
   // Auto scale for mobile screens on initial load
   useEffect(() => {
     const handleResize = () => {
@@ -135,7 +154,38 @@ export default function PrepareDocumentPage() {
         const res = await api.get(`/documents/${id}`);
         setDoc(res.data);
         setSigners(res.data.signers || []);
-        setFields(res.data.fields || []);
+
+        // Restore fields: check sessionStorage first, then fallback to API
+        const savedFields = sessionStorage.getItem(`snapserve_prepare_fields_${id}`);
+        if (savedFields) {
+          try {
+            setFields(JSON.parse(savedFields));
+          } catch {
+            setFields(res.data.fields || []);
+          }
+        } else {
+          setFields(res.data.fields || []);
+        }
+
+        // Restore pre-populated values from DB or sessionStorage
+        const savedVals = sessionStorage.getItem(`snapserve_prepare_values_${id}`);
+        const dbVals: Record<string, any> = {};
+        (res.data.fields || []).forEach((f: any) => {
+          if (f.value || f.imageData) {
+            dbVals[f.id] = { value: f.value, imageData: f.imageData };
+          }
+        });
+        if (savedVals) {
+          try {
+            const parsed = JSON.parse(savedVals);
+            setSelfSignValues({ ...dbVals, ...parsed });
+          } catch {
+            setSelfSignValues(dbVals);
+          }
+        } else if (Object.keys(dbVals).length > 0) {
+          setSelfSignValues(dbVals);
+        }
+
         if (res.data.signers?.length > 0) {
           setSelectedSignerId(res.data.signers[0].id);
         }
