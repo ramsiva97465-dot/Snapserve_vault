@@ -71,11 +71,11 @@ export async function sendEmailViaBrevo({
 
   const senders = [
     {
-      email: process.env.BREVO_SENDER_EMAIL || "karthiasc12@gmail.com",
+      email: process.env.BREVO_SENDER_EMAIL || "noreply@snapserve.ai",
       name: process.env.BREVO_SENDER_NAME || "SnapServe Vault",
     },
     {
-      email: "noreply@snapserve.ai",
+      email: "karthiasc12@gmail.com",
       name: "SnapServe Vault",
     },
     {
