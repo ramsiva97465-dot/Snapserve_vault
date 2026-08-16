@@ -231,7 +231,7 @@ router.post("/token/:token/sign", sigUpload.single("signatureImage"), async (req
       });
     } catch {}
 
-    // Save to memory store for immediate sync on owner page
+      // Save to memory store for immediate sync on owner page
     for (const doc of inMemoryStore.documents) {
       const fieldsArr = doc.fields || [];
       let targetField = fieldsArr.find((f: any) => f.id === fieldId);
@@ -274,6 +274,20 @@ router.post("/token/:token/sign", sigUpload.single("signatureImage"), async (req
               imageData,
             },
           });
+
+      try {
+        if (fieldId) {
+          await prisma.documentField.update({
+            where: { id: fieldId },
+            data: {
+              ...(value && { value }),
+              ...(imageData && { imageData }),
+            },
+          });
+        }
+      } catch (fieldDbErr) {
+        console.warn("DB documentField update note on sign:", fieldDbErr);
+      }
 
       try {
         await logAudit({

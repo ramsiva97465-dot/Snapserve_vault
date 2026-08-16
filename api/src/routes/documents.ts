@@ -81,39 +81,74 @@ async function handleShareEmailAccess(
   }
 }
 
-async function renderFieldOnPdf(page: any, f: any, pdfDoc: any, font: any, pWidth: number, pHeight: number) {
-  const scaleX = pWidth / 680;
-  const scaleY = pHeight / 960;
-  const pdfX = (f.x || 50) * scaleX;
-  const pdfY = pHeight - ((f.y || 50) + (f.height || 40)) * scaleY;
-  const pdfW = (f.width || 150) * scaleX;
-  const pdfH = (f.height || 50) * scaleY;
+async function renderFieldOnPdf(
+  page: any,
+  field: any,
+  pdfDoc: any,
+  font: any,
+  pageWidth: number,
+  pageHeight: number
+) {
+  try {
+    const { rgb } = await import("pdf-lib");
+    // Web editor canvas dimensions are ~794 x 1123 (A4 pixel representation)
+    const scaleX = pageWidth / 794;
+    const scaleY = pageHeight / 1123;
 
-  const val = f.value || f.imageData;
-  if (!val) return;
+    const fieldX = (field.x || 0) * scaleX;
+    const fieldW = (field.width || 120) * scaleX;
+    const fieldH = (field.height || 40) * scaleY;
+    // PDF Y-axis starts from BOTTOM-LEFT corner (0,0)
+    const fieldY = pageHeight - ((field.y || 0) * scaleY) - fieldH;
 
-  if (val.startsWith("data:image")) {
-    try {
-      const base64Parts = val.split(",");
-      const base64Data = base64Parts[1] || base64Parts[0];
-      const imageBytes = Buffer.from(base64Data, "base64");
-      const img = val.includes("jpeg") || val.includes("jpg")
-        ? await pdfDoc.embedJpg(imageBytes)
-        : await pdfDoc.embedPng(imageBytes).catch(() => pdfDoc.embedJpg(imageBytes));
+    const fieldType = (field.fieldType || "").toUpperCase();
+    const imageData = field.imageData;
+    const value = field.value;
 
-      if (img) {
-        page.drawImage(img, { x: pdfX, y: pdfY, width: pdfW, height: pdfH });
+    // 1. SIGNATURE, INITIALS, SEAL -> Embed PNG or JPG Image
+    if ((fieldType === "SIGNATURE" || fieldType === "INITIALS" || fieldType === "SEAL") && imageData) {
+      try {
+        const base64Data = imageData.split(",")[1] || imageData;
+        const imgBuffer = Buffer.from(base64Data, "base64");
+        let embeddedImg;
+        if (imageData.includes("png") || base64Data.startsWith("iVBOR")) {
+          embeddedImg = await pdfDoc.embedPng(imgBuffer);
+        } else {
+          embeddedImg = await pdfDoc.embedJpg(imgBuffer);
+        }
+        page.drawImage(embeddedImg, {
+          x: fieldX,
+          y: fieldY,
+          width: fieldW,
+          height: fieldH,
+        });
+      } catch (imgErr) {
+        console.warn("Failed to embed signature image on PDF:", imgErr);
       }
-    } catch {
-      page.drawText("✓ SIGNED", { x: pdfX + 5, y: pdfY + 5, size: 10, font });
+    } else if (value) {
+      // 2. EMAIL, DATE, TEXT, COMPANY, PHONE, ADDRESS, NUMBER -> Draw white capsule background so text NEVER overlaps on signatures!
+      page.drawRectangle({
+        x: fieldX,
+        y: fieldY,
+        width: fieldW,
+        height: fieldH,
+        color: rgb(1, 1, 1),
+        borderColor: rgb(0.85, 0.88, 0.92),
+        borderWidth: 0.5,
+      });
+
+      const textStr = String(value);
+      const fontSize = Math.max(8, Math.min(11, fieldH * 0.45));
+      page.drawText(textStr, {
+        x: fieldX + 4,
+        y: fieldY + (fieldH - fontSize) / 2,
+        size: fontSize,
+        font,
+        color: rgb(0.06, 0.09, 0.16),
+      });
     }
-  } else {
-    page.drawText(String(val), {
-      x: pdfX + 5,
-      y: pdfY + 5,
-      size: Math.max(10, Math.min(14, pdfH * 0.4)),
-      font,
-    });
+  } catch (err) {
+    console.warn("Error rendering field on PDF:", err);
   }
 }
 
@@ -211,9 +246,21 @@ router.get("/:id", async (req: AuthRequest, res) => {
         } catch {}
       }
       const idx = inMemoryStore.documents.findIndex((m) => m.id === targetId);
+      const existingMem = idx !== -1 ? inMemoryStore.documents[idx] : null;
+
+      // Merge signatures and inMemoryStore fields so recipient signatures/values always render on canvas
+      const mergedFields = (dbDoc.fields || []).map((dbF: any) => {
+        const sig = (dbDoc.signatures || []).find((s: any) => s.fieldId === dbF.id);
+        const memF = (existingMem?.fields || []).find((m: any) => m.id === dbF.id || m.fieldType === dbF.fieldType);
+        return {
+          ...dbF,
+          value: dbF.value || sig?.value || memF?.value,
+          imageData: dbF.imageData || sig?.imageData || memF?.imageData,
+        };
+      });
+
+      dbDoc.fields = mergedFields.length ? mergedFields : (existingMem?.fields || []);
       if (idx !== -1) {
-        const existingMem = inMemoryStore.documents[idx];
-        dbDoc.fields = dbDoc.fields?.length ? dbDoc.fields : (existingMem.fields || []);
         inMemoryStore.documents[idx] = dbDoc as any;
       } else {
         inMemoryStore.documents.unshift(dbDoc as any);
@@ -763,7 +810,17 @@ router.get("/:id/download", async (req: AuthRequest, res) => {
     const pages = pdfDoc.getPages();
     const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    const fieldsToBurn = docObj?.fields?.length ? docObj.fields : (memDoc?.fields || []);
+    const rawFields = docObj?.fields?.length ? docObj.fields : (memDoc?.fields || []);
+    const fieldsToBurn = rawFields.map((f: any) => {
+      const sig = (docObj?.signatures || []).find((s: any) => s.fieldId === f.id);
+      const memF = (memDoc?.fields || []).find((m: any) => m.id === f.id || m.fieldType === f.fieldType);
+      return {
+        ...f,
+        value: f.value || sig?.value || memF?.value,
+        imageData: f.imageData || sig?.imageData || memF?.imageData,
+      };
+    });
+
     for (const f of fieldsToBurn) {
       const pageIndex = (f.pageNumber || 1) - 1;
       if (pageIndex >= 0 && pageIndex < pages.length) {
@@ -777,7 +834,8 @@ router.get("/:id/download", async (req: AuthRequest, res) => {
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(docObj?.title || "Signed_Document")}.pdf"`);
     return res.send(Buffer.from(signedPdfBytes));
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Failed to generate signed PDF:", error);
     res.status(500).json({ error: "Failed to generate signed PDF" });
   }
 });
