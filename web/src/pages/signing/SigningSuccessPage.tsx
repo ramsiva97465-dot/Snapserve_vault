@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Check, Download, ArrowLeft, Edit3, ShieldCheck } from "lucide-react";
+import { useParams } from "react-router-dom";
+import { Check, Download, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import Logo from "@/components/layout/Logo";
@@ -58,12 +58,6 @@ export default function SigningSuccessPage() {
     <div className="min-h-screen bg-surface-50 flex flex-col">
       <header className="bg-white border-b border-surface-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
         <Logo variant="sidebar" />
-        <Link
-          to="/"
-          className="flex items-center gap-2 text-sm font-semibold text-surface-600 hover:text-surface-900 transition-colors"
-        >
-          <ArrowLeft size={16} /> Back to Home
-        </Link>
       </header>
 
       <div className="flex-1 flex items-center justify-center p-6">
