@@ -805,17 +805,6 @@ export default function PrepareDocumentPage() {
           <div>
             <label className="text-[11px] font-medium text-surface-600 mb-1 block">Font Family</label>
             <select
-              value={selectedField.properties?.fontFamily || "sans-serif"}
-              onChange={(e) => {
-                const val = e.target.value;
-                setFields((prev) => prev.map((f) => f.id === selectedField.id ? { ...f, properties: { ...f.properties, fontFamily: val } } : f));
-              }}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-surface-300 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-            >
-          {/* Font Family */}
-          <div>
-            <label className="text-[11px] font-medium text-surface-600 mb-1 block">Font Family</label>
-            <select
               value={selectedField.properties?.fontFamily || "Inter, system-ui, sans-serif"}
               onChange={(e) => {
                 const val = e.target.value;
