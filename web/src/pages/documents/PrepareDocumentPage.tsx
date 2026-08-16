@@ -1304,6 +1304,8 @@ export default function PrepareDocumentPage() {
       {showLinksModal && (
         <SigningLinksModal
           links={signerLinks}
+          documentId={id}
+          documentTitle={doc?.title}
           onClose={() => { setShowLinksModal(false); navigate(`/documents/${id}`); }}
         />
       )}
