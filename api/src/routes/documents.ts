@@ -197,6 +197,19 @@ router.get("/:id", async (req: AuthRequest, res) => {
     });
 
     if (dbDoc) {
+      if (!dbDoc.originalFileUrl || !dbDoc.originalFileUrl.startsWith("data:application/pdf")) {
+        try {
+          let fileBuffer = Buffer.from("");
+          if (dbDoc.originalFileUrl && dbDoc.originalFileUrl.startsWith("data:")) {
+            const b64 = dbDoc.originalFileUrl.split(",")[1] || "";
+            fileBuffer = Buffer.from(b64, "base64");
+          } else if (dbDoc.originalFileUrl) {
+            const localPath = path.join(process.cwd(), dbDoc.originalFileUrl.replace(/^\//, ""));
+            if (fs.existsSync(localPath)) fileBuffer = fs.readFileSync(localPath);
+          }
+          dbDoc.originalFileUrl = await convertFileToPdfDataUrl(fileBuffer, dbDoc.fileName || dbDoc.title, "application/octet-stream");
+        } catch {}
+      }
       const idx = inMemoryStore.documents.findIndex((m) => m.id === targetId);
       if (idx !== -1) {
         const existingMem = inMemoryStore.documents[idx];
@@ -211,9 +224,23 @@ router.get("/:id", async (req: AuthRequest, res) => {
     console.warn("DB single doc get note:", err);
   }
 
-  if (memDoc) return res.json(memDoc);
+  if (memDoc) {
+    if (!memDoc.originalFileUrl || !memDoc.originalFileUrl.startsWith("data:application/pdf")) {
+      try {
+        memDoc.originalFileUrl = await convertFileToPdfDataUrl(Buffer.from(""), memDoc.fileName || memDoc.title, "application/octet-stream");
+      } catch {}
+    }
+    return res.json(memDoc);
+  }
   const fallbackDoc = inMemoryStore.documents.find((d) => d.fields?.length) || inMemoryStore.documents[0];
-  if (fallbackDoc) return res.json(fallbackDoc);
+  if (fallbackDoc) {
+    if (!fallbackDoc.originalFileUrl || !fallbackDoc.originalFileUrl.startsWith("data:application/pdf")) {
+      try {
+        fallbackDoc.originalFileUrl = await convertFileToPdfDataUrl(Buffer.from(""), fallbackDoc.fileName || fallbackDoc.title, "application/octet-stream");
+      } catch {}
+    }
+    return res.json(fallbackDoc);
+  }
 
   res.status(404).json({ error: "Document not found" });
 });
