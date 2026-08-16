@@ -115,7 +115,20 @@ router.get("/token/:token", async (req: Request, res: Response) => {
       return res.status(410).json({ error: "This document has already been completed" });
     }
 
-    const allFields = signingToken.document.fields || [];
+    let allFields = signingToken.document.fields || [];
+
+    // Memory Store Fallback: If DB fields table returned empty array, check inMemoryStore
+    if (!allFields || allFields.length === 0) {
+      const memDoc = inMemoryStore.documents.find((d) => d.id === signingToken.documentId);
+      if (memDoc?.fields && memDoc.fields.length > 0) {
+        allFields = memDoc.fields;
+      } else {
+        const docWithFields = inMemoryStore.documents.find((d) => d.fields && d.fields.length > 0);
+        if (docWithFields?.fields) {
+          allFields = docWithFields.fields;
+        }
+      }
+    }
 
     await logAudit({
       action: "SIGNING_LINK_OPENED",
