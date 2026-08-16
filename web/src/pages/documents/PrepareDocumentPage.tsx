@@ -347,6 +347,12 @@ export default function PrepareDocumentPage() {
   };
 
   // Field drag on canvas
+  // Alignment Guide Lines State
+  const [activeGuidelines, setActiveGuidelines] = useState<{ vertical: number[]; horizontal: number[] }>({
+    vertical: [],
+    horizontal: [],
+  });
+
   const handleFieldMouseDown = (e: React.MouseEvent | React.TouchEvent, fieldId: string) => {
     e.stopPropagation();
     const field = fields.find((f) => f.id === fieldId);
@@ -370,18 +376,100 @@ export default function PrepareDocumentPage() {
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
     const rect = container.getBoundingClientRect();
-    const x = (clientX - rect.left - dragOffset.current.x) / scale;
-    const y = (clientY - rect.top - dragOffset.current.y) / scale;
+    let rawX = (clientX - rect.left - dragOffset.current.x) / scale;
+    let rawY = (clientY - rect.top - dragOffset.current.y) / scale;
+
+    const targetField = fields.find((f) => f.id === draggingFieldId.current);
+    if (!targetField) return;
+
+    const width = targetField.width;
+    const height = targetField.height;
+    const SNAP_THRESHOLD = 8; // Snap tolerance in pixels
+
+    let snappedX = Math.max(0, rawX);
+    let snappedY = Math.max(0, rawY);
+
+    const verticalGuides: number[] = [];
+    const horizontalGuides: number[] = [];
+
+    const otherFields = fields.filter((f) => f.id !== draggingFieldId.current && f.pageNumber === currentPage);
+
+    for (const other of otherFields) {
+      const oL = other.x;
+      const oR = other.x + other.width;
+      const oCX = other.x + other.width / 2;
+
+      const oT = other.y;
+      const oB = other.y + other.height;
+      const oCY = other.y + other.height / 2;
+
+      // X-Axis (Vertical Lines) Snapping
+      // 1. Left to Left
+      if (Math.abs(snappedX - oL) < SNAP_THRESHOLD) {
+        snappedX = oL;
+        verticalGuides.push(oL);
+      }
+      // 2. Left to Right
+      else if (Math.abs(snappedX - oR) < SNAP_THRESHOLD) {
+        snappedX = oR;
+        verticalGuides.push(oR);
+      }
+      // 3. Center to Center
+      else if (Math.abs(snappedX + width / 2 - oCX) < SNAP_THRESHOLD) {
+        snappedX = oCX - width / 2;
+        verticalGuides.push(oCX);
+      }
+      // 4. Right to Left
+      else if (Math.abs(snappedX + width - oL) < SNAP_THRESHOLD) {
+        snappedX = oL - width;
+        verticalGuides.push(oL);
+      }
+      // 5. Right to Right
+      else if (Math.abs(snappedX + width - oR) < SNAP_THRESHOLD) {
+        snappedX = oR - width;
+        verticalGuides.push(oR);
+      }
+
+      // Y-Axis (Horizontal Lines) Snapping
+      // 1. Top to Top
+      if (Math.abs(snappedY - oT) < SNAP_THRESHOLD) {
+        snappedY = oT;
+        horizontalGuides.push(oT);
+      }
+      // 2. Directly below with clean 6px gap (e.g. Date right under Signature)
+      else if (Math.abs(snappedY - (oB + 6)) < SNAP_THRESHOLD) {
+        snappedY = oB + 6;
+        horizontalGuides.push(oB + 6);
+      }
+      // 3. Directly above with clean 6px gap
+      else if (Math.abs(snappedY + height - (oT - 6)) < SNAP_THRESHOLD) {
+        snappedY = oT - 6 - height;
+        horizontalGuides.push(oT - 6);
+      }
+      // 4. Center to Center
+      else if (Math.abs(snappedY + height / 2 - oCY) < SNAP_THRESHOLD) {
+        snappedY = oCY - height / 2;
+        horizontalGuides.push(oCY);
+      }
+      // 5. Bottom to Bottom
+      else if (Math.abs(snappedY + height - oB) < SNAP_THRESHOLD) {
+        snappedY = oB - height;
+        horizontalGuides.push(oB);
+      }
+    }
+
+    setActiveGuidelines({ vertical: verticalGuides, horizontal: horizontalGuides });
 
     setFields((prev) =>
       prev.map((f) =>
-        f.id === draggingFieldId.current ? { ...f, x: Math.max(0, x), y: Math.max(0, y) } : f
+        f.id === draggingFieldId.current ? { ...f, x: snappedX, y: snappedY } : f
       )
     );
   };
 
   const handleCanvasMouseUp = () => {
     draggingFieldId.current = null;
+    setActiveGuidelines({ vertical: [], horizontal: [] });
   };
 
   const handleDeleteField = (fieldId: string) => {
@@ -1184,6 +1272,22 @@ export default function PrepareDocumentPage() {
               onTouchEnd={handleCanvasMouseUp}
               onClick={() => setSelectedFieldId(null)}
             >
+              {/* Dynamic Alignment Guide Lines (Cyan Dotted Snapping Lines) */}
+              {activeGuidelines.vertical.map((vX, i) => (
+                <div
+                  key={`v-guide-${i}`}
+                  className="absolute pointer-events-none z-50 border-l-2 border-dashed border-cyan-500"
+                  style={{ left: vX * scale, top: 0, bottom: 0 }}
+                />
+              ))}
+              {activeGuidelines.horizontal.map((hY, i) => (
+                <div
+                  key={`h-guide-${i}`}
+                  className="absolute pointer-events-none z-50 border-t-2 border-dashed border-cyan-500"
+                  style={{ top: hY * scale, left: 0, right: 0 }}
+                />
+              ))}
+
               {!pdfDoc ? (
                 <div style={{ width: pageSize.width, height: pageSize.height }} className="bg-white flex items-center justify-center">
                   <p className="text-surface-400 text-sm">PDF preview rendering...</p>
