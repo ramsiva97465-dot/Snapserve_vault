@@ -70,20 +70,22 @@ export async function sendEmailViaBrevo({
   }
 
   const senders = [
-    ...(senderEmail ? [{ email: senderEmail, name: process.env.BREVO_SENDER_NAME || "SnapServe Vault" }] : []),
     {
-      email: process.env.BREVO_SENDER_EMAIL_1 || process.env.BREVO_SENDER_EMAIL || "ramsiva97465@gmail.com",
+      email: process.env.BREVO_SENDER_EMAIL || "karthiasc12@gmail.com",
       name: process.env.BREVO_SENDER_NAME || "SnapServe Vault",
     },
     {
-      email: process.env.BREVO_SENDER_EMAIL_2 || "sivaramsiva605@gmail.com",
-      name: process.env.BREVO_SENDER_NAME || "SnapServe Vault",
+      email: "noreply@snapserve.ai",
+      name: "SnapServe Vault",
     },
     {
-      email: process.env.BREVO_SENDER_EMAIL_3 || "snapserve.ai@gmail.com",
-      name: process.env.BREVO_SENDER_NAME || "SnapServe Vault",
+      email: "notify@theaitel.com",
+      name: "SnapServe Vault",
     },
+    ...(senderEmail ? [{ email: senderEmail, name: "SnapServe Vault" }] : []),
   ];
+
+  const replyToEmail = senderEmail || "ramsiva97465@gmail.com";
 
   let lastError = "";
   for (const sender of senders) {
@@ -97,6 +99,7 @@ export async function sendEmailViaBrevo({
         },
         body: JSON.stringify({
           sender,
+          replyTo: { email: replyToEmail, name: "SnapServe Vault" },
           to: [{ email: toEmail, name: toName || toEmail }],
           subject,
           htmlContent,
