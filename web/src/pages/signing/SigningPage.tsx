@@ -8,6 +8,7 @@ import { DocumentField, Signer, FIELD_LABELS } from "@/types";
 import { cn } from "@/lib/utils";
 import TermsModal from "@/components/signing/TermsModal";
 import SignatureModal from "@/components/signing/SignatureModal";
+import TextInputModal from "@/components/document/TextInputModal";
 import Logo from "@/components/layout/Logo";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
@@ -23,6 +24,7 @@ export default function SigningPage() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(true);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [showTextInputModal, setShowTextInputModal] = useState(false);
   const [activeField, setActiveField] = useState<DocumentField | null>(null);
 
   // Document context
@@ -175,7 +177,20 @@ export default function SigningPage() {
       const newVal = current === "checked" ? "" : "checked";
       setFieldValues((prev) => ({ ...prev, [field.id]: { value: newVal, signatureType: "TYPED" } }));
       saveFieldValue(field.id, { value: newVal, signatureType: "TYPED" });
+    } else {
+      // EMAIL, TEXT, COMPANY, ADDRESS, PHONE, NUMBER, NOTE -> Open TextInputModal to type!
+      setShowTextInputModal(true);
     }
+  };
+
+  const handleTextSave = async (typedValue: string) => {
+    if (!activeField) return;
+    const fv: FieldValue = { value: typedValue, signatureType: "TYPED" };
+    setFieldValues((prev) => ({ ...prev, [activeField.id]: fv }));
+    await saveFieldValue(activeField.id, fv);
+    setShowTextInputModal(false);
+    setActiveField(null);
+    toast.success(`${FIELD_LABELS[activeField.fieldType] || activeField.fieldType} saved!`);
   };
 
   const saveFieldValue = async (fieldId: string, data: FieldValue) => {
@@ -273,6 +288,18 @@ export default function SigningPage() {
           signerName={signer?.name || ""}
           onCapture={handleSignatureCapture}
           onClose={() => { setShowSignatureModal(false); setActiveField(null); }}
+        />
+      )}
+
+      {/* Text Input Modal for Email, Text, Phone, Company, Address, Number */}
+      {showTextInputModal && activeField && (
+        <TextInputModal
+          isOpen={showTextInputModal}
+          onClose={() => { setShowTextInputModal(false); setActiveField(null); }}
+          onSave={handleTextSave}
+          fieldType={activeField.fieldType}
+          initialValue={fieldValues[activeField.id]?.value}
+          defaultEmail={signer?.email}
         />
       )}
 
