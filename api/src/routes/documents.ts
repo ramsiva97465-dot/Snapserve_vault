@@ -281,46 +281,138 @@ async function convertFileToPdfDataUrl(fileBuffer: Buffer, fileName: string, mim
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
+    const isPpt = /\.(pptx|ppt)$/i.test(fileName);
+    const isDoc = /\.(docx|doc)$/i.test(fileName);
     const docName = fileName.replace(/\.[^/.]+$/, "");
+    const ext = fileName.split(".").pop()?.toUpperCase() || "DOCUMENT";
+
+    // 1. Top Sleek Brand Header Banner
+    page.drawRectangle({
+      x: 0,
+      y: 792,
+      width: 595,
+      height: 50,
+      color: rgb(0.06, 0.09, 0.16),
+    });
+
+    page.drawText("SNAPSERVE VAULT", {
+      x: 40,
+      y: 812,
+      size: 11,
+      font: boldFont,
+      color: rgb(0.23, 0.51, 0.96),
+    });
+
+    page.drawText(isPpt ? "EXECUTIVE PRESENTATION SLIDE" : isDoc ? "EXECUTIVE AGREEMENT DOCUMENT" : "DIGITAL SIGNING DOCUMENT", {
+      x: 40,
+      y: 798,
+      size: 9,
+      font,
+      color: rgb(0.6, 0.65, 0.75),
+    });
+
+    // 2. Main Title Header
     page.drawText(docName, {
-      x: 50,
-      y: 770,
+      x: 40,
+      y: 745,
       size: 20,
       font: boldFont,
       color: rgb(0.06, 0.09, 0.16),
     });
 
-    const ext = fileName.split(".").pop()?.toUpperCase() || "DOCUMENT";
-    page.drawText(`Uploaded File: ${fileName} (${ext})`, {
-      x: 50,
-      y: 742,
-      size: 11,
+    page.drawText(`Format: ${ext}  |  File: ${fileName}  |  Status: Ready for E-Signature`, {
+      x: 40,
+      y: 724,
+      size: 10,
       font,
-      color: rgb(0.3, 0.35, 0.4),
+      color: rgb(0.4, 0.45, 0.55),
     });
 
-    page.drawLine({
-      start: { x: 50, y: 730 },
-      end: { x: 545, y: 730 },
-      thickness: 1,
-      color: rgb(0.85, 0.88, 0.92),
+    // 3. Main Slide / Document Card Container Box
+    page.drawRectangle({
+      x: 40,
+      y: 250,
+      width: 515,
+      height: 450,
+      borderColor: rgb(0.85, 0.88, 0.92),
+      borderWidth: 1,
+      color: rgb(0.98, 0.99, 1),
     });
 
-    const lines = [
-      "Document converted and ready for digital signing.",
-      "Place signatures, dates, initials, and seals anywhere on this page.",
-    ];
-    let currentY = 700;
-    for (const line of lines) {
-      page.drawText(line, {
-        x: 50,
-        y: currentY,
-        size: 11,
-        font,
-        color: rgb(0.4, 0.45, 0.5),
-      });
-      currentY -= 20;
+    // Inner Card Header
+    page.drawRectangle({
+      x: 40,
+      y: 660,
+      width: 515,
+      height: 40,
+      color: isPpt ? rgb(0.93, 0.95, 1) : rgb(0.95, 0.97, 0.99),
+    });
+
+    page.drawText(isPpt ? "📊 PRESENTATION SLIDE PREVIEW & AUTHORIZATION" : "📑 DOCUMENT OVERVIEW & SIGNING PREVIEW", {
+      x: 60,
+      y: 674,
+      size: 11,
+      font: boldFont,
+      color: isPpt ? rgb(0.11, 0.31, 0.85) : rgb(0.09, 0.25, 0.6),
+    });
+
+    // Bullet points / Content lines
+    const contentLines = isPpt
+      ? [
+          "• Executive Project Overview & Review Deck",
+          "• Verified Slide Content & Team Approval Requirements",
+          "• Authorized Digital Signatures, Dates, and Official Stamps",
+          "",
+          "Please review the document layout and place required signature fields below.",
+        ]
+      : [
+          "• Official Agreement & Document Record",
+          "• Terms & Conditions Compliance Verified",
+          "• Authorized Digital Signatures, Dates, and Official Stamps",
+          "",
+          "Please review the document layout and place required signature fields below.",
+        ];
+
+    let currentY = 620;
+    for (const line of contentLines) {
+      if (line) {
+        page.drawText(line, {
+          x: 60,
+          y: currentY,
+          size: 11,
+          font: line.startsWith("•") ? boldFont : font,
+          color: rgb(0.2, 0.25, 0.35),
+        });
+      }
+      currentY -= 24;
     }
+
+    // Bottom E-Signature & Stamp Placement Zone
+    page.drawRectangle({
+      x: 60,
+      y: 270,
+      width: 475,
+      height: 180,
+      borderColor: rgb(0.23, 0.51, 0.96),
+      borderWidth: 1,
+      color: rgb(0.96, 0.98, 1),
+    });
+
+    page.drawText("✍️ E-SIGNATURE, STAMP & DATE PLACEMENT ZONE", {
+      x: 140,
+      y: 425,
+      size: 11,
+      font: boldFont,
+      color: rgb(0.11, 0.31, 0.85),
+    });
+
+    page.drawText("Drag & drop Signatures, Seals, Dates, and Text fields into this canvas region.", {
+      x: 95,
+      y: 405,
+      size: 9.5,
+      font,
+      color: rgb(0.35, 0.4, 0.5),
+    });
 
     const pdfBytes = await pdfDoc.save();
     return `data:application/pdf;base64,${Buffer.from(pdfBytes).toString("base64")}`;

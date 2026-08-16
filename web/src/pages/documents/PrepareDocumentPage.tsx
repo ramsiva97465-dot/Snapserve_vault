@@ -224,20 +224,77 @@ export default function PrepareDocumentPage() {
             getPage: async () => ({
               getViewport: ({ scale }: { scale: number }) => ({ width: 794 * scale, height: 1123 * scale }),
               render: async ({ canvasContext }: { canvasContext: CanvasRenderingContext2D }) => {
+                const title = res.data?.title || "Uploaded Document";
+                const fileName = res.data?.fileName || title;
+                const isPpt = /\.(pptx|ppt)$/i.test(fileName) || title.includes("pptx");
+                const ext = fileName.split(".").pop()?.toUpperCase() || "DOCUMENT";
+
+                // Background
                 canvasContext.fillStyle = "#ffffff";
                 canvasContext.fillRect(0, 0, 794, 1123);
-                canvasContext.font = "bold 20px Inter, sans-serif";
+
+                // Top Header Banner
                 canvasContext.fillStyle = "#0f172a";
-                canvasContext.fillText(res.data?.title || "Uploaded Document", 50, 80);
+                canvasContext.fillRect(0, 0, 794, 60);
+
+                canvasContext.font = "bold 14px Inter, sans-serif";
+                canvasContext.fillStyle = "#3b82f6";
+                canvasContext.fillText("SNAPSERVE VAULT", 50, 36);
+
+                canvasContext.font = "12px Inter, sans-serif";
+                canvasContext.fillStyle = "#94a3b8";
+                canvasContext.fillText(isPpt ? "EXECUTIVE PRESENTATION SLIDE" : "EXECUTIVE DOCUMENT", 600, 36);
+
+                // Document Title
+                canvasContext.font = "bold 24px Inter, sans-serif";
+                canvasContext.fillStyle = "#0f172a";
+                canvasContext.fillText(title, 50, 115);
+
                 canvasContext.font = "13px Inter, sans-serif";
                 canvasContext.fillStyle = "#64748b";
-                canvasContext.fillText("Document page ready for digital signing.", 50, 110);
+                canvasContext.fillText(`Format: ${ext}  |  File: ${fileName}  |  Status: Ready for E-Signature`, 50, 145);
+
+                // Main Card Container
+                canvasContext.fillStyle = "#fafafa";
+                canvasContext.fillRect(50, 170, 694, 550);
                 canvasContext.strokeStyle = "#e2e8f0";
-                canvasContext.lineWidth = 1;
-                canvasContext.beginPath();
-                canvasContext.moveTo(50, 130);
-                canvasContext.lineTo(744, 130);
-                canvasContext.stroke();
+                canvasContext.lineWidth = 1.5;
+                canvasContext.strokeRect(50, 170, 694, 550);
+
+                // Inner Header
+                canvasContext.fillStyle = isPpt ? "#eff6ff" : "#f1f5f9";
+                canvasContext.fillRect(50, 170, 694, 50);
+
+                canvasContext.font = "bold 14px Inter, sans-serif";
+                canvasContext.fillStyle = isPpt ? "#1d4ed8" : "#0f172a";
+                canvasContext.fillText(isPpt ? "📊 PRESENTATION SLIDE PREVIEW & AUTHORIZATION" : "📑 DOCUMENT OVERVIEW & SIGNING PREVIEW", 75, 202);
+
+                // Bullet Points
+                canvasContext.font = "bold 14px Inter, sans-serif";
+                canvasContext.fillStyle = "#1e293b";
+                canvasContext.fillText(isPpt ? "• Executive Project Overview & Review Deck" : "• Official Agreement & Document Record", 80, 260);
+                canvasContext.fillText("• Verified Content & Team Approval Requirements", 80, 300);
+                canvasContext.fillText("• Authorized Digital Signatures, Dates, and Official Stamps", 80, 340);
+
+                canvasContext.font = "13px Inter, sans-serif";
+                canvasContext.fillStyle = "#475569";
+                canvasContext.fillText("Please review the document layout and place required signature fields below.", 80, 390);
+
+                // Signing Box Zone
+                canvasContext.fillStyle = "#eff6ff";
+                canvasContext.fillRect(80, 430, 634, 250);
+                canvasContext.strokeStyle = "#3b82f6";
+                canvasContext.lineWidth = 1.5;
+                canvasContext.strokeRect(80, 430, 634, 250);
+
+                canvasContext.font = "bold 15px Inter, sans-serif";
+                canvasContext.fillStyle = "#1d4ed8";
+                canvasContext.fillText("✍️ E-SIGNATURE, STAMP & DATE PLACEMENT ZONE", 230, 520);
+
+                canvasContext.font = "13px Inter, sans-serif";
+                canvasContext.fillStyle = "#64748b";
+                canvasContext.fillText("Drag & drop Signatures, Seals, Dates, and Text fields into this canvas region.", 175, 550);
+
                 return { promise: Promise.resolve() };
               },
             }),
