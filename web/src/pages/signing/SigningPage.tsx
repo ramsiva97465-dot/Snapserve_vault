@@ -319,15 +319,24 @@ export default function SigningPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => {
-              if (pdfUrl && pdfUrl.startsWith("data:")) {
+            onClick={async () => {
+              const toastId = toast.loading("Generating signed PDF...");
+              try {
+                const res = await api.get(`/signing/token/${token}/download`, { responseType: "blob" });
+                const blob = new Blob([res.data], { type: "application/pdf" });
+                const blobUrl = window.URL.createObjectURL(blob);
                 const a = document.createElement("a");
-                a.href = pdfUrl;
-                a.download = `${docTitle || "Document"}.pdf`;
+                a.href = blobUrl;
+                a.download = `${docTitle || "Document"}_signed.pdf`;
+                document.body.appendChild(a);
                 a.click();
+                document.body.removeChild(a);
+                setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+                toast.dismiss(toastId);
                 toast.success("Document downloaded!");
-              } else if (pdfUrl) {
-                window.open(pdfUrl.startsWith("http") ? pdfUrl : `${window.location.origin}${pdfUrl}`, "_blank");
+              } catch {
+                toast.dismiss(toastId);
+                toast.error("Failed to download PDF.");
               }
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-surface-300 hover:bg-surface-50 text-xs font-semibold text-surface-700 transition-colors"

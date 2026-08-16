@@ -30,35 +30,28 @@ export default function SigningSuccessPage() {
     const cleanName = finalName.endsWith(".pdf") ? finalName : `${finalName}.pdf`;
 
     setDownloading(true);
-    if (pdfUrl && pdfUrl.startsWith("data:")) {
-      const a = document.createElement("a");
-      a.href = pdfUrl;
-      a.download = cleanName;
-      a.click();
-      toast.success(`Downloaded: ${cleanName}`);
-      setDownloading(false);
-    } else if (pdfUrl) {
-      const fullUrl = pdfUrl.startsWith("http") ? pdfUrl : `${window.location.origin}${pdfUrl}`;
-      fetch(fullUrl)
-        .then((res) => res.blob())
-        .then((blob) => {
-          const blobUrl = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = blobUrl;
-          a.download = cleanName;
-          a.click();
-          window.URL.revokeObjectURL(blobUrl);
-          toast.success(`Downloaded: ${cleanName}`);
-        })
-        .catch(() => {
-          window.open(fullUrl, "_blank");
-          toast.info("Opened document in new tab");
-        })
-        .finally(() => setDownloading(false));
-    } else {
-      toast.error("Document PDF not available for download.");
-      setDownloading(false);
-    }
+    const toastId = toast.loading(`Generating signed PDF "${cleanName}"...`);
+
+    api
+      .get(`/signing/token/${token}/download`, { responseType: "blob" })
+      .then((res) => {
+        const blob = new Blob([res.data], { type: "application/pdf" });
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = cleanName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+        toast.dismiss(toastId);
+        toast.success(`Downloaded: ${cleanName}`);
+      })
+      .catch(() => {
+        toast.dismiss(toastId);
+        toast.error("Failed to download signed PDF.");
+      })
+      .finally(() => setDownloading(false));
   };
 
   return (

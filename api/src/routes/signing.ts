@@ -474,4 +474,145 @@ router.post("/revoke/:tokenId", async (req: Request, res: Response) => {
   }
 });
 
+async function renderFieldOnPdf(
+  page: any,
+  field: any,
+  pdfDoc: any,
+  font: any,
+  pageWidth: number,
+  pageHeight: number
+) {
+  try {
+    const { rgb } = await import("pdf-lib");
+    const scaleX = pageWidth / 794;
+    const scaleY = pageHeight / 1123;
+
+    const fieldX = (field.x || 0) * scaleX;
+    const fieldW = (field.width || 120) * scaleX;
+    const fieldH = (field.height || 40) * scaleY;
+    const fieldY = pageHeight - ((field.y || 0) * scaleY) - fieldH;
+
+    const fieldType = (field.fieldType || "").toUpperCase();
+    const imageData = field.imageData;
+    const value = field.value;
+
+    if ((fieldType === "SIGNATURE" || fieldType === "INITIALS" || fieldType === "SEAL") && imageData) {
+      try {
+        const base64Data = imageData.split(",")[1] || imageData;
+        const imgBuffer = Buffer.from(base64Data, "base64");
+        let embeddedImg;
+        if (imageData.includes("png") || base64Data.startsWith("iVBOR")) {
+          embeddedImg = await pdfDoc.embedPng(imgBuffer);
+        } else {
+          embeddedImg = await pdfDoc.embedJpg(imgBuffer);
+        }
+        page.drawImage(embeddedImg, {
+          x: fieldX,
+          y: fieldY,
+          width: fieldW,
+          height: fieldH,
+        });
+      } catch (imgErr) {
+        console.warn("Failed to embed signature image on PDF via token:", imgErr);
+      }
+    } else if (value) {
+      page.drawRectangle({
+        x: fieldX,
+        y: fieldY,
+        width: fieldW,
+        height: fieldH,
+        color: rgb(1, 1, 1),
+        borderColor: rgb(0.85, 0.88, 0.92),
+        borderWidth: 0.5,
+      });
+
+      const textStr = String(value);
+      const fontSize = Math.max(8, Math.min(11, fieldH * 0.45));
+      page.drawText(textStr, {
+        x: fieldX + 4,
+        y: fieldY + (fieldH - fontSize) / 2,
+        size: fontSize,
+        font,
+        color: rgb(0.06, 0.09, 0.16),
+      });
+    }
+  } catch (err) {
+    console.warn("Error rendering field on PDF via token:", err);
+  }
+}
+
+// Download burnt signed PDF via guest token (unauthenticated public route)
+router.get("/token/:token/download", async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    const { PDFDocument, StandardFonts } = await import("pdf-lib");
+
+    let signingToken: any;
+    try {
+      signingToken = await prisma.signingToken.findUnique({
+        where: { token: token as string },
+        include: {
+          document: {
+            include: { fields: true, signatures: true },
+          },
+        },
+      });
+    } catch {}
+
+    const memToken = (inMemoryStore as any).signingTokens?.find((t: any) => t.token === token);
+    const docId = signingToken?.documentId || memToken?.documentId;
+    const memDoc = inMemoryStore.documents.find((d) => d.id === docId);
+
+    const docObj = signingToken?.document || memDoc || inMemoryStore.documents[0];
+
+    if (!docObj) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    let pdfBuffer: Buffer;
+    if (docObj?.originalFileUrl?.startsWith("data:")) {
+      const base64Data = docObj.originalFileUrl.split(",")[1] || docObj.originalFileUrl;
+      pdfBuffer = Buffer.from(base64Data, "base64");
+    } else if (docObj?.filePath && fs.existsSync(docObj.filePath)) {
+      pdfBuffer = fs.readFileSync(docObj.filePath);
+    } else {
+      const blankPdf = await PDFDocument.create();
+      blankPdf.addPage([612, 792]);
+      pdfBuffer = Buffer.from(await blankPdf.save());
+    }
+
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    const pages = pdfDoc.getPages();
+    const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+    const rawFields = docObj?.fields?.length ? docObj.fields : (memDoc?.fields || []);
+    const fieldsToBurn = rawFields.map((f: any) => {
+      const sig = (docObj?.signatures || []).find((s: any) => s.fieldId === f.id);
+      const memF = (memDoc?.fields || []).find((m: any) => m.id === f.id || m.fieldType === f.fieldType);
+      return {
+        ...f,
+        value: f.value || sig?.value || memF?.value,
+        imageData: f.imageData || sig?.imageData || memF?.imageData,
+      };
+    });
+
+    for (const f of fieldsToBurn) {
+      const pageIndex = (f.pageNumber || 1) - 1;
+      if (pageIndex >= 0 && pageIndex < pages.length) {
+        const page = pages[pageIndex];
+        const { width: pWidth, height: pHeight } = page.getSize();
+        await renderFieldOnPdf(page, f, pdfDoc, font, pWidth, pHeight);
+      }
+    }
+
+    const signedPdfBytes = await pdfDoc.save();
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(docObj?.title || "Signed_Document")}.pdf"`);
+    return res.send(Buffer.from(signedPdfBytes));
+  } catch (error: any) {
+    console.error("Failed to generate signed PDF via token:", error);
+    res.status(500).json({ error: "Failed to generate signed PDF" });
+  }
+});
+
 export default router;
