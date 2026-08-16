@@ -140,16 +140,6 @@ export default function SigningSuccessPage() {
               </div>
             </div>
           </div>
-
-          {/* Action Navigation */}
-          <div className="flex items-center justify-center gap-4 pt-2">
-            <Link
-              to="/"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-surface-300 text-surface-700 hover:bg-surface-100 text-sm font-semibold transition-colors"
-            >
-              <ArrowLeft size={16} /> Back to Dashboard
-            </Link>
-          </div>
         </div>
       </div>
     </div>
