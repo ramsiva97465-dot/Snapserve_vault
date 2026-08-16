@@ -7,7 +7,7 @@ export function getSocket(): Socket {
   if (!socket) {
     const socketUrl = window.location.origin;
     socket = io(socketUrl, {
-      transports: ["websocket", "polling"],
+      transports: ["polling", "websocket"],
       autoConnect: true,
     });
 

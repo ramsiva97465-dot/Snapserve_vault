@@ -77,18 +77,35 @@ import fs from "fs";
 const webDistPath = path.resolve(__dirname, "../../web/dist");
 if (fs.existsSync(webDistPath)) {
   console.log(`📦 Serving web frontend from ${webDistPath}`);
-  app.use(express.static(webDistPath));
+  app.use(express.static(webDistPath, {
+    maxAge: "1d",
+    index: false,
+  }));
+
   app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api") || req.path.startsWith("/uploads") || req.path === "/health") {
-      return next();
+    if (
+      req.path.startsWith("/api") ||
+      req.path.startsWith("/uploads") ||
+      req.path.startsWith("/assets") ||
+      req.path === "/health" ||
+      /\.(css|js|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot|map|json)$/i.test(req.path)
+    ) {
+      return res.status(404).send("Asset not found");
     }
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.sendFile(path.join(webDistPath, "index.html"));
   });
 } else {
   // Fallback 404 handler if web/dist is not built
   app.use((req, res, next) => {
-    if (req.path.startsWith("/api") || req.path.startsWith("/uploads") || req.path === "/health") {
-      return next();
+    if (
+      req.path.startsWith("/api") ||
+      req.path.startsWith("/uploads") ||
+      req.path.startsWith("/assets") ||
+      req.path === "/health" ||
+      /\.(css|js|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot|map|json)$/i.test(req.path)
+    ) {
+      return res.status(404).send("Asset not found");
     }
     res.status(404).json({ error: "Frontend build not found. Run 'npm run build' in /web directory." });
   });
