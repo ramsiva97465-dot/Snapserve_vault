@@ -75,11 +75,11 @@ export async function sendEmailViaBrevo({
       name: process.env.BREVO_SENDER_NAME || "SnapServe Vault",
     },
     {
-      email: "karthiasc12@gmail.com",
+      email: "[EMAIL_ADDRESS]",
       name: "SnapServe.ai",
     },
     {
-      email: "notify@theaitel.com",
+      email: "[EMAIL_ADDRESS]",
       name: "SnapServe.ai",
     },
     ...(senderEmail ? [{ email: senderEmail, name: "SnapServe.ai" }] : []),
