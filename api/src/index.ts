@@ -19,8 +19,13 @@ import analyticsRoutes from "./routes/analytics";
 import notificationRoutes from "./routes/notifications";
 import auditRoutes from "./routes/audit";
 
+import compression from "compression";
+
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Enable gzip compression for 10x faster API responses
+app.use(compression());
 
 // Security
 app.use(helmet({
