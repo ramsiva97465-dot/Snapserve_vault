@@ -76,16 +76,16 @@ export async function sendEmailViaBrevo({
     },
     {
       email: "karthiasc12@gmail.com",
-      name: "SnapServe Vault",
+      name: "SnapServe.ai",
     },
     {
       email: "notify@theaitel.com",
-      name: "SnapServe Vault",
+      name: "SnapServe.ai",
     },
-    ...(senderEmail ? [{ email: senderEmail, name: "SnapServe Vault" }] : []),
+    ...(senderEmail ? [{ email: senderEmail, name: "SnapServe.ai" }] : []),
   ];
 
-  const replyToEmail = senderEmail || "ramsiva97465@gmail.com";
+  const replyToEmail = senderEmail;
 
   let lastError = "";
   for (const sender of senders) {

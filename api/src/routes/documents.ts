@@ -92,8 +92,8 @@ async function renderFieldOnPdf(
   try {
     const { rgb } = await import("pdf-lib");
     // Calculate exact container bounds matching web canvas for 1:1 pixel accuracy
-    const containerW = field.containerWidth || field.canvasWidth || (field.x > 600 ? 794 : pageWidth);
-    const containerH = field.containerHeight || field.canvasHeight || (field.y > 900 ? 1123 : pageHeight);
+    const containerW = field.containerWidth || field.canvasWidth || 794;
+    const containerH = field.containerHeight || field.canvasHeight || 1123;
 
     const scaleX = pageWidth / containerW;
     const scaleY = pageHeight / containerH;
