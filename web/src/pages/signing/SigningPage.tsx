@@ -392,13 +392,13 @@ export default function SigningPage() {
                   key={field.id}
                   onClick={() => isAssignedToMe && handleFieldClick(field)}
                   className={cn(
-                    "absolute rounded transition-all flex items-center justify-center overflow-hidden",
+                    "absolute transition-all flex items-center justify-center overflow-hidden",
                     isAssignedToMe ? "cursor-pointer" : "cursor-default opacity-90 pointer-events-none",
                     hasValue
-                      ? "border-1.5 border-emerald-500/60 bg-transparent"
+                      ? "border-none bg-transparent"
                       : isAssignedToMe && field.isRequired
-                      ? "border-2 border-brand-500 bg-brand-50/40 animate-pulse-soft ring-2 ring-brand-400/50"
-                      : "border-1.5 border-slate-300 bg-slate-100/40"
+                      ? "border-2 border-brand-500 bg-brand-50/40 animate-pulse-soft ring-2 ring-brand-400/50 rounded"
+                      : "border-1.5 border-slate-300 bg-slate-100/40 rounded"
                   )}
                   style={{
                     left: field.x * scale,
@@ -409,7 +409,7 @@ export default function SigningPage() {
                   }}
                 >
                   {hasValue ? (
-                    <div className="flex items-center justify-center h-full w-full relative">
+                    <div className="flex items-center justify-center h-full w-full relative bg-transparent">
                       {field.fieldType === "SIGNATURE" || field.fieldType === "INITIALS" || field.fieldType === "SEAL" ? (
                         fVal.imageData ? (
                           <img
@@ -423,7 +423,7 @@ export default function SigningPage() {
                           </span>
                         )
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-white/95 backdrop-blur-xs border border-slate-200 rounded px-1.5 py-0.5 shadow-xs">
+                        <div className="w-full h-full flex items-center justify-center bg-transparent border-none p-0">
                           <span
                             className="truncate text-center w-full font-semibold text-slate-900"
                             style={{

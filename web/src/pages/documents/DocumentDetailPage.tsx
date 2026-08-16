@@ -275,7 +275,7 @@ export default function DocumentDetailPage() {
                       key={field.id}
                       className={cn(
                         "absolute rounded transition-all flex items-center justify-center overflow-hidden",
-                        hasValue ? "border-1.5 border-emerald-500/50 bg-transparent" : "border-1.5 border-brand-400 bg-brand-50/20"
+                        hasValue ? "border-none bg-transparent" : "border-1.5 border-brand-400 bg-brand-50/20"
                       )}
                       style={{
                         left: field.x * 0.85,

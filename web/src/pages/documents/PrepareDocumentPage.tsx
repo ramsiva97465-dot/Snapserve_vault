@@ -1422,7 +1422,7 @@ export default function PrepareDocumentPage() {
                     className={cn(
                       "document-field rounded transition-all cursor-pointer group",
                       hasValue
-                        ? "border-1.5 border-emerald-500/50 bg-transparent hover:border-emerald-600"
+                        ? "border-none bg-transparent"
                         : "border-1.5",
                       isSelected ? "ring-2 ring-offset-1 ring-brand-500" : "hover:ring-1"
                     )}
@@ -1432,8 +1432,8 @@ export default function PrepareDocumentPage() {
                       width: field.width * scale,
                       height: field.height * scale,
                       backgroundColor: hasValue ? "transparent" : `${color}18`,
-                      borderColor: hasValue ? "#10b981" : color,
-                      borderStyle: hasValue ? "dashed" : "solid",
+                      borderColor: hasValue ? "transparent" : color,
+                      borderStyle: hasValue ? "none" : "solid",
                       zIndex: isSelected ? 30 : 10,
                     }}
                     onMouseDown={(e) => handleFieldMouseDown(e, field.id)}
