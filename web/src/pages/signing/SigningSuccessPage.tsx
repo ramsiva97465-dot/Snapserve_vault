@@ -91,36 +91,10 @@ export default function SigningSuccessPage() {
             <button
               onClick={() => handleDownload(`${docTitle}_signed.pdf`)}
               disabled={downloading}
-              className="w-full flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-md transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-md transition-all disabled:opacity-50"
             >
-              <Download size={18} /> Download Exact File ({docTitle}_signed.pdf)
+              <Download size={18} /> Download Signed Document ({docTitle}_signed.pdf)
             </button>
-
-            {/* Custom Rename Section */}
-            <div className="pt-3 border-t border-surface-200">
-              <label className="block text-xs font-semibold text-surface-700 mb-1.5 flex items-center gap-1.5">
-                <Edit3 size={13} className="text-brand-600" /> Rename Before Download (Optional)
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={customFileName}
-                    onChange={(e) => setCustomFileName(e.target.value)}
-                    placeholder="Enter custom file name..."
-                    className="w-full px-3.5 py-2 rounded-xl border border-surface-300 text-xs font-medium text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500 pr-12 bg-white"
-                  />
-                  <span className="absolute right-3 top-2 text-xs font-bold text-surface-400">.pdf</span>
-                </div>
-                <button
-                  onClick={() => handleDownload()}
-                  disabled={downloading || !customFileName.trim()}
-                  className="px-4 py-2 rounded-xl bg-surface-900 hover:bg-surface-800 disabled:opacity-50 text-white text-xs font-semibold transition-colors flex-shrink-0"
-                >
-                  Download
-                </button>
-              </div>
-            </div>
           </div>
 
           {/* Info cards */}
