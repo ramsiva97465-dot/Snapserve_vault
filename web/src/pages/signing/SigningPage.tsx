@@ -346,6 +346,7 @@ export default function SigningPage() {
 
             {/* Overlay fields for this page */}
             {pageFields.map((field) => {
+              const isAssignedToMe = !field.signerId || field.signerId === signer?.id;
               const fVal = fieldValues[field.id] || { value: field.value, imageData: field.imageData };
               const hasValue = !!(fVal.imageData || fVal.value);
               const props = field.properties || {};
@@ -353,14 +354,15 @@ export default function SigningPage() {
               return (
                 <div
                   key={field.id}
-                  onClick={() => handleFieldClick(field)}
+                  onClick={() => isAssignedToMe && handleFieldClick(field)}
                   className={cn(
-                    "absolute cursor-pointer rounded transition-all flex items-center justify-center overflow-hidden",
+                    "absolute rounded transition-all flex items-center justify-center overflow-hidden",
+                    isAssignedToMe ? "cursor-pointer" : "cursor-default opacity-90 pointer-events-none",
                     hasValue
-                      ? "border-1.5 border-emerald-500/60 bg-transparent hover:border-emerald-600"
-                      : field.isRequired
-                      ? "border-2 border-brand-500 bg-brand-50/40 animate-pulse-soft"
-                      : "border-2 border-brand-300 bg-brand-50/20"
+                      ? "border-1.5 border-emerald-500/60 bg-transparent"
+                      : isAssignedToMe && field.isRequired
+                      ? "border-2 border-brand-500 bg-brand-50/40 animate-pulse-soft ring-2 ring-brand-400/50"
+                      : "border-1.5 border-slate-300 bg-slate-100/40"
                   )}
                   style={{
                     left: field.x * scale,
@@ -389,18 +391,22 @@ export default function SigningPage() {
                             fontStyle: props.fontStyle || "normal",
                           }}
                         >
-                          {fVal.value === "checked" ? "✓ Checked" : fVal.value}
+                          {fVal.value}
                         </span>
                       )}
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-600 border border-white rounded-full flex items-center justify-center shadow-xs">
                         <Check size={8} className="text-white" />
                       </div>
                     </div>
+                  ) : isAssignedToMe ? (
+                    <div className="text-center px-1">
+                      <p className="text-xs font-bold text-brand-600 truncate">{field.fieldType}</p>
+                      <p className="text-[10px] text-brand-500 font-medium">Click to Sign</p>
+                    </div>
                   ) : (
-                    <div className="flex items-center justify-center h-full w-full">
-                      <span className="text-xs font-semibold text-brand-600 px-1.5 truncate">
-                        {FIELD_LABELS[field.fieldType] || field.fieldType}
-                      </span>
+                    <div className="text-center px-1 bg-surface-100/80 w-full h-full flex flex-col items-center justify-center">
+                      <p className="text-[11px] font-semibold text-surface-500 truncate">{field.fieldType}</p>
+                      <p className="text-[9px] text-surface-400 font-medium">Owner Field</p>
                     </div>
                   )}
                 </div>

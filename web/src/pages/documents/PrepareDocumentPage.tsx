@@ -579,6 +579,7 @@ export default function PrepareDocumentPage() {
     setSaving(true);
     try {
       const fieldsToSave = fields.map((f) => ({
+        ...f,
         signerId: f.signerId,
         fieldType: f.fieldType,
         fieldName: f.fieldName,
@@ -594,6 +595,7 @@ export default function PrepareDocumentPage() {
         value: selfSignValues[f.id]?.value || f.value,
         imageData: selfSignValues[f.id]?.imageData || f.imageData,
       }));
+      setFields(fieldsToSave);
       const allSigned = fieldsToSave.length > 0 && fieldsToSave.every((f) => f.value || f.imageData);
       const newStatus = allSigned ? "COMPLETED" : "DRAFT";
       await api.post("/fields/bulk-save", { documentId: id, fields: fieldsToSave });
@@ -610,6 +612,7 @@ export default function PrepareDocumentPage() {
   const silentSave = async () => {
     try {
       const fieldsToSave = fields.map((f) => ({
+        ...f,
         signerId: f.signerId,
         fieldType: f.fieldType,
         fieldName: f.fieldName,
@@ -622,6 +625,8 @@ export default function PrepareDocumentPage() {
         defaultValue: f.defaultValue,
         placeholder: f.placeholder,
         properties: f.properties,
+        value: selfSignValues[f.id]?.value || f.value,
+        imageData: selfSignValues[f.id]?.imageData || f.imageData,
       }));
       await api.post("/fields/bulk-save", { documentId: id, fields: fieldsToSave });
     } catch {
@@ -637,7 +642,12 @@ export default function PrepareDocumentPage() {
     await handleSave();
     setSending(true);
     try {
-      const res = await api.post(`/documents/${id}/send`, { fields });
+      const fieldsToPass = fields.map((f) => ({
+        ...f,
+        value: selfSignValues[f.id]?.value || f.value,
+        imageData: selfSignValues[f.id]?.imageData || f.imageData,
+      }));
+      const res = await api.post(`/documents/${id}/send`, { fields: fieldsToPass });
       setSignerLinks(res.data.signerLinks || []);
       setShowLinksModal(true);
       toast.success("Document sent for signature!");
