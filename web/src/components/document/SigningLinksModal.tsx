@@ -23,6 +23,13 @@ export default function SigningLinksModal({ links, documentId, documentTitle, on
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [phoneNumbers, setPhoneNumbers] = useState<Record<string, string>>({});
+  const [fromEmails, setFromEmails] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    links.forEach((l) => {
+      initial[l.signer.id] = currentUser?.email || "ramsiva97465@gmail.com";
+    });
+    return initial;
+  });
   const [emailAddresses, setEmailAddresses] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     links.forEach((l) => {
@@ -54,9 +61,9 @@ export default function SigningLinksModal({ links, documentId, documentTitle, on
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleSendEmail = async (signerId: string, email: string, signingUrl: string) => {
-    if (!email || !email.includes("@")) {
-      toast.error("Please enter a valid recipient email address.");
+  const handleSendEmail = async (signerId: string, fromEmail: string, toEmail: string, signingUrl: string) => {
+    if (!toEmail || !toEmail.includes("@")) {
+      toast.error("Please enter a valid customer email address (To).");
       return;
     }
     setSendingEmailId(signerId);
@@ -64,12 +71,13 @@ export default function SigningLinksModal({ links, documentId, documentTitle, on
       if (documentId) {
         await api.post(`/documents/${documentId}/share`, {
           shareType: "EMAIL",
-          recipientEmail: email,
+          senderEmail: fromEmail,
+          recipientEmail: toEmail,
           shareUrl: signingUrl,
           message: `Please sign document "${documentTitle || "Document"}": ${signingUrl}`,
         });
       }
-      toast.success(`Automated email invitation dispatched to ${email}!`);
+      toast.success(`Automated email template dispatched to ${toEmail}!`);
     } catch {
       toast.error("Failed to send email.");
     } finally {
@@ -176,27 +184,49 @@ export default function SigningLinksModal({ links, documentId, documentTitle, on
                     {/* 2 Dispatch Options: Email & WhatsApp */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                       {/* Option 1 — Email */}
-                      <div className="p-2.5 rounded-xl border border-blue-200 bg-blue-50/40 space-y-1.5">
+                      <div className="p-2.5 rounded-xl border border-blue-200 bg-blue-50/40 space-y-2">
                         <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900">
                           <Mail size={13} className="text-blue-600" />
                           <span>1. Email Dispatch</span>
                         </div>
-                        <input
-                          type="email"
-                          value={currentEmail}
-                          onChange={(e) =>
-                            setEmailAddresses((prev) => ({ ...prev, [link.signer.id]: e.target.value }))
-                          }
-                          placeholder="Client Gmail"
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-blue-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
+                        <div>
+                          <label className="block text-[10px] font-bold text-blue-800 uppercase tracking-wider mb-0.5">From (Sender)</label>
+                          <input
+                            type="email"
+                            value={fromEmails[link.signer.id] ?? (currentUser?.email || "ramsiva97465@gmail.com")}
+                            onChange={(e) =>
+                              setFromEmails((prev) => ({ ...prev, [link.signer.id]: e.target.value }))
+                            }
+                            placeholder="Sender Gmail"
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-blue-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-blue-800 uppercase tracking-wider mb-0.5">To (Customer)</label>
+                          <input
+                            type="email"
+                            value={currentEmail}
+                            onChange={(e) =>
+                              setEmailAddresses((prev) => ({ ...prev, [link.signer.id]: e.target.value }))
+                            }
+                            placeholder="Customer Gmail"
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-blue-200 text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
                         <button
-                          onClick={() => handleSendEmail(link.signer.id, currentEmail, cleanSigningUrl)}
+                          onClick={() =>
+                            handleSendEmail(
+                              link.signer.id,
+                              fromEmails[link.signer.id] ?? (currentUser?.email || "ramsiva97465@gmail.com"),
+                              currentEmail,
+                              cleanSigningUrl
+                            )
+                          }
                           disabled={sendingEmailId === link.signer.id}
-                          className="w-full py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                          className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 mt-1"
                         >
                           {sendingEmailId === link.signer.id ? (
-                            <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                           ) : (
                             <>
                               <Send size={12} /> Send Email

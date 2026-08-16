@@ -1,4 +1,5 @@
 interface SendEmailParams {
+  senderEmail?: string;
   toEmail: string;
   toName?: string;
   subject: string;
@@ -8,6 +9,7 @@ interface SendEmailParams {
 }
 
 export async function sendEmailViaBrevo({
+  senderEmail,
   toEmail,
   toName,
   subject,
@@ -25,11 +27,11 @@ export async function sendEmailViaBrevo({
       <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px; color: #18181b; }
         .container { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .header { background: linear-gradient(135deg, #4f46e5, #3b82f6); padding: 32px 24px; text-align: center; color: white; }
+        .header { background: linear-gradient(135deg, #2563eb, #3b82f6); padding: 32px 24px; text-align: center; color: white; }
         .header h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
         .content { padding: 32px 24px; line-height: 1.6; }
         .doc-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0; font-weight: 600; color: #0f172a; }
-        .btn { display: inline-block; background: #4f46e5; color: #ffffff !important; font-weight: 600; text-decoration: none; padding: 14px 28px; border-radius: 10px; margin-top: 20px; box-shadow: 0 2px 6px rgba(79,70,229,0.3); }
+        .btn { display: inline-block; background: #2563eb; color: #ffffff !important; font-weight: 600; text-decoration: none; padding: 14px 28px; border-radius: 10px; margin-top: 20px; box-shadow: 0 2px 6px rgba(37,99,235,0.3); }
         .footer { background: #f8fafc; padding: 16px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
       </style>
     </head>
@@ -40,14 +42,14 @@ export async function sendEmailViaBrevo({
         </div>
         <div class="content">
           <p>Hello ${toName || "there"},</p>
-          <p>A document has been shared with you via SnapServe Vault:</p>
+          <p>A document signature request has been sent to you via SnapServe Vault:</p>
           <div class="doc-card">
             📄 ${documentTitle}
           </div>
           ${message ? `<p style="font-style: italic; background: #fffbe0; padding: 12px; border-left: 3px solid #f59e0b; border-radius: 6px;">"${message}"</p>` : ""}
-          <p>Click the button below to view and complete the document:</p>
+          <p>Click the button below to review and sign the document online:</p>
           <div style="text-align: center;">
-            <a href="${shareUrl}" class="btn" target="_blank">View Document</a>
+            <a href="${shareUrl}" class="btn" target="_blank">Review & Sign Document</a>
           </div>
         </div>
         <div class="footer">
@@ -64,6 +66,7 @@ export async function sendEmailViaBrevo({
   }
 
   const senders = [
+    ...(senderEmail ? [{ email: senderEmail, name: process.env.BREVO_SENDER_NAME || "SnapServe Vault" }] : []),
     {
       email: process.env.BREVO_SENDER_EMAIL_1 || process.env.BREVO_SENDER_EMAIL || "ramsiva97465@gmail.com",
       name: process.env.BREVO_SENDER_NAME || "SnapServe Vault",

@@ -746,7 +746,7 @@ router.post("/:id/self-sign", async (req: AuthRequest, res) => {
 router.post("/:id/share", async (req: AuthRequest, res) => {
   try {
     const docId = req.params.id as string;
-    const { shareType, recipientEmail, recipientPhone, recipientName, message, shareUrl } = req.body;
+    const { shareType, senderEmail, recipientEmail, recipientPhone, recipientName, message, shareUrl } = req.body;
 
     const memDoc = inMemoryStore.documents.find((d) => d.id === docId);
     const docTitle = memDoc?.title || "Document";
@@ -758,9 +758,10 @@ router.post("/:id/share", async (req: AuthRequest, res) => {
 
       const { sendEmailViaBrevo } = await import("../services/email");
       const result = await sendEmailViaBrevo({
+        senderEmail,
         toEmail: recipientEmail,
         toName: recipientName,
-        subject: `Document Shared: ${docTitle}`,
+        subject: `Signature Request: ${docTitle}`,
         documentTitle: docTitle,
         shareUrl: shareUrl || `http://localhost:5173/documents/${docId}`,
         message,
