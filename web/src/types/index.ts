@@ -101,6 +101,7 @@ export interface DocumentField {
   placeholder?: string;
   properties?: Record<string, any>;
   createdAt: string;
+  signer?: Signer;
   value?: string;
   imageData?: string;
   containerWidth?: number;
