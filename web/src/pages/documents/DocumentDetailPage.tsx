@@ -69,20 +69,26 @@ export default function DocumentDetailPage() {
         setDoc(res.data);
 
         // Load PDF preview
-        const FALLBACK_PDF = "https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf";
         const rawUrl: string | undefined = res.data.originalFileUrl;
-        const resolvedUrl = rawUrl && rawUrl.length > 0
-          ? rawUrl.startsWith("http") ? rawUrl : `${window.location.origin}${rawUrl}`
-          : FALLBACK_PDF;
-
         try {
-          const loaded = await pdfjs.getDocument({ url: resolvedUrl }).promise;
-          setPdfDoc(loaded);
-          setPageCount(loaded.numPages);
-        } catch {
-          const fallback = await pdfjs.getDocument({ url: FALLBACK_PDF }).promise;
-          setPdfDoc(fallback);
-          setPageCount(fallback.numPages);
+          if (rawUrl && rawUrl.startsWith("data:")) {
+            const base64 = rawUrl.split(",")[1] || rawUrl;
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+              bytes[i] = binary.charCodeAt(i);
+            }
+            const loaded = await pdfjs.getDocument({ data: bytes }).promise;
+            setPdfDoc(loaded);
+            setPageCount(loaded.numPages);
+          } else if (rawUrl && rawUrl.length > 0) {
+            const resolvedUrl = rawUrl.startsWith("http") ? rawUrl : `${window.location.origin}${rawUrl}`;
+            const loaded = await pdfjs.getDocument({ url: resolvedUrl }).promise;
+            setPdfDoc(loaded);
+            setPageCount(loaded.numPages);
+          }
+        } catch (pdfErr) {
+          console.error("PDF load error:", pdfErr);
         }
       } catch {
         toast.error("Failed to load document.");

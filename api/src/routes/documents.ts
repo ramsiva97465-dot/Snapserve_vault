@@ -252,11 +252,20 @@ router.post("/", async (req: AuthRequest, res) => {
 // Upload PDF
 router.post("/:id/upload", upload.single("file"), async (req: AuthRequest, res) => {
   try {
-    const fileUrl = req.file
-      ? `/uploads/original/${req.file.filename}`
-      : "https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf";
+    let fileUrl = "/uploads/original/document.pdf";
     const fileName = req.file?.originalname || "Document.pdf";
     const fileSize = req.file?.size || 150000;
+
+    if (req.file) {
+      try {
+        const fileBuffer = fs.readFileSync(req.file.path);
+        const base64 = fileBuffer.toString("base64");
+        const mimeType = req.file.mimetype || "application/pdf";
+        fileUrl = `data:${mimeType};base64,${base64}`;
+      } catch {
+        fileUrl = `/uploads/original/${req.file.filename}`;
+      }
+    }
 
     try {
       const document = await prisma.document.findFirst({
@@ -284,7 +293,7 @@ router.post("/:id/upload", upload.single("file"), async (req: AuthRequest, res) 
 
     res.json({ id: req.params.id, originalFileUrl: fileUrl, fileName, status: "PREPARING" });
   } catch (error: any) {
-    res.json({ id: req.params.id, originalFileUrl: "https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf", fileName: "Document.pdf", status: "PREPARING" });
+    res.status(500).json({ error: "Upload processing failed" });
   }
 });
 
@@ -496,13 +505,16 @@ router.get("/:id/download", async (req: AuthRequest, res) => {
 
     docObj ??= memDoc;
 
-    const samplePdfUrl = "https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf";
     let pdfBuffer: Buffer;
-    if (docObj?.filePath && fs.existsSync(docObj.filePath)) {
+    if (docObj?.originalFileUrl?.startsWith("data:")) {
+      const base64Data = docObj.originalFileUrl.split(",")[1] || docObj.originalFileUrl;
+      pdfBuffer = Buffer.from(base64Data, "base64");
+    } else if (docObj?.filePath && fs.existsSync(docObj.filePath)) {
       pdfBuffer = fs.readFileSync(docObj.filePath);
     } else {
-      const resp = await fetch(samplePdfUrl);
-      pdfBuffer = Buffer.from(await resp.arrayBuffer());
+      const blankPdf = await PDFDocument.create();
+      blankPdf.addPage([612, 792]);
+      pdfBuffer = Buffer.from(await blankPdf.save());
     }
 
     const pdfDoc = await PDFDocument.load(pdfBuffer);

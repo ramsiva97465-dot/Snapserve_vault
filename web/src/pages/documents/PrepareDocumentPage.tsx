@@ -190,25 +190,28 @@ export default function PrepareDocumentPage() {
           setSelectedSignerId(res.data.signers[0].id);
         }
 
-        // Resolve file URL: relative paths must point to API (3001), not Vite (5173)
-        const FALLBACK_PDF = "https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf";
+        // Resolve PDF loading
         const rawUrl: string | null | undefined = res.data.originalFileUrl;
-        const resolvedUrl: string =
-          rawUrl && rawUrl.length > 0
-            ? rawUrl.startsWith("http")
-              ? rawUrl
-              : `${window.location.origin}${rawUrl}`
-            : FALLBACK_PDF;
 
         try {
-          const loadedPdf = await pdfjs.getDocument({ url: resolvedUrl }).promise;
-          setPdfDoc(loadedPdf);
-          setPageCount(loadedPdf.numPages);
-        } catch {
-          // If the specific file 404s (or is not a PDF), fall back to demo PDF silently
-          const fallbackPdf = await pdfjs.getDocument({ url: FALLBACK_PDF }).promise;
-          setPdfDoc(fallbackPdf);
-          setPageCount(fallbackPdf.numPages);
+          if (rawUrl && rawUrl.startsWith("data:")) {
+            const base64 = rawUrl.split(",")[1] || rawUrl;
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+              bytes[i] = binary.charCodeAt(i);
+            }
+            const loadedPdf = await pdfjs.getDocument({ data: bytes }).promise;
+            setPdfDoc(loadedPdf);
+            setPageCount(loadedPdf.numPages);
+          } else if (rawUrl && rawUrl.length > 0) {
+            const resolvedUrl = rawUrl.startsWith("http") ? rawUrl : `${window.location.origin}${rawUrl}`;
+            const loadedPdf = await pdfjs.getDocument({ url: resolvedUrl }).promise;
+            setPdfDoc(loadedPdf);
+            setPageCount(loadedPdf.numPages);
+          }
+        } catch (pdfErr) {
+          console.error("PDF load error:", pdfErr);
         }
       } catch (err) {
         console.error("Document load error:", err);
