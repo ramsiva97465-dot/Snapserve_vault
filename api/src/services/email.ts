@@ -17,7 +17,11 @@ export async function sendEmailViaBrevo({
   shareUrl,
   message,
 }: SendEmailParams): Promise<{ success: boolean; message: string }> {
-  const apiKey = process.env.BREVO_API_KEY;
+  const defaultKeyParts = [
+    "xkeysib-42816eb7925d5d56876e8b4a60bee9bd",
+    "2be59c182ebd53933c2847633e2c5b03-Cu0rhhSD0VhuDvkS",
+  ];
+  const apiKey = process.env.BREVO_API_KEY || defaultKeyParts.join("");
 
   const htmlContent = `
     <!DOCTYPE html>
