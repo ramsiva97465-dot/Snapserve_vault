@@ -276,9 +276,21 @@ router.post("/token/:token/sign", sigUpload.single("signatureImage"), async (req
           });
 
       try {
-        if (fieldId) {
+        let fieldToUpdate = fieldId ? await prisma.documentField.findUnique({ where: { id: fieldId } }) : null;
+        if (!fieldToUpdate && signingToken?.documentId) {
+          fieldToUpdate = await prisma.documentField.findFirst({
+            where: {
+              documentId: signingToken.documentId,
+              OR: [
+                { fieldType: (signatureType || "TEXT") as any },
+                { signerId: signingToken.signerId },
+              ],
+            },
+          });
+        }
+        if (fieldToUpdate) {
           await prisma.documentField.update({
-            where: { id: fieldId },
+            where: { id: fieldToUpdate.id },
             data: {
               ...(value && { value }),
               ...(imageData && { imageData }),
@@ -338,7 +350,11 @@ router.post("/token/:token/complete", async (req: Request, res: Response) => {
       let foundToken: any = null;
       for (const doc of inMemoryStore.documents) {
         const t = (doc.signingTokens || []).find((st: any) => st.token === token);
-        if (t) { foundDoc = doc; foundToken = t; break; }
+        if (t) {
+          foundDoc = doc;
+          foundToken = t;
+          break;
+        }
       }
       if (!foundDoc && inMemoryStore.documents.length > 0) {
         foundDoc = inMemoryStore.documents[0];
@@ -594,14 +610,27 @@ router.get("/token/:token/download", async (req: Request, res: Response) => {
       pdfDoc.addPage([794, 1123]);
     }
 
-    const rawFields = docObj?.fields?.length ? docObj.fields : (memDoc?.fields || []);
-    const fieldsToBurn = rawFields.map((f: any) => {
-      const sig = (docObj?.signatures || []).find((s: any) => s.fieldId === f.id);
-      const memF = (memDoc?.fields || []).find((m: any) => m.id === f.id || m.fieldType === f.fieldType);
+    const dbFields = docObj?.fields?.length ? docObj.fields : [];
+    const memFields = memDoc?.fields || [];
+    const allCandidateFields = dbFields.length ? dbFields : memFields;
+
+    const fieldsToBurn = allCandidateFields.map((f: any, idx: number) => {
+      let sig = (docObj?.signatures || []).find((s: any) => s.fieldId === f.id);
+      if (!sig) {
+        sig = (docObj?.signatures || []).find(
+          (s: any) => s.signatureType === f.fieldType || (f.signerId && s.signerId === f.signerId)
+        ) || (docObj?.signatures || [])[idx];
+      }
+
+      const memF = memFields.find((m: any) => m.id === f.id || m.fieldType === f.fieldType) || memFields[idx];
+
+      const val = f.value || sig?.value || memF?.value;
+      const img = f.imageData || sig?.imageData || memF?.imageData;
+
       return {
         ...f,
-        value: f.value || sig?.value || memF?.value,
-        imageData: f.imageData || sig?.imageData || memF?.imageData,
+        value: val,
+        imageData: img,
       };
     });
 

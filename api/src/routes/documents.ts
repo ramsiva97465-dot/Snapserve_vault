@@ -827,14 +827,27 @@ router.get("/:id/download", async (req: AuthRequest, res) => {
       pdfDoc.addPage([794, 1123]);
     }
 
-    const rawFields = docObj?.fields?.length ? docObj.fields : (memDoc?.fields || []);
-    const fieldsToBurn = rawFields.map((f: any) => {
-      const sig = (docObj?.signatures || []).find((s: any) => s.fieldId === f.id);
-      const memF = (memDoc?.fields || []).find((m: any) => m.id === f.id || m.fieldType === f.fieldType);
+    const dbFields = docObj?.fields?.length ? docObj.fields : [];
+    const memFields = memDoc?.fields || [];
+    const allCandidateFields = dbFields.length ? dbFields : memFields;
+
+    const fieldsToBurn = allCandidateFields.map((f: any, idx: number) => {
+      let sig = (docObj?.signatures || []).find((s: any) => s.fieldId === f.id);
+      if (!sig) {
+        sig = (docObj?.signatures || []).find(
+          (s: any) => s.signatureType === f.fieldType || (f.signerId && s.signerId === f.signerId)
+        ) || (docObj?.signatures || [])[idx];
+      }
+
+      const memF = memFields.find((m: any) => m.id === f.id || m.fieldType === f.fieldType) || memFields[idx];
+
+      const val = f.value || sig?.value || memF?.value;
+      const img = f.imageData || sig?.imageData || memF?.imageData;
+
       return {
         ...f,
-        value: f.value || sig?.value || memF?.value,
-        imageData: f.imageData || sig?.imageData || memF?.imageData,
+        value: val,
+        imageData: img,
       };
     });
 
