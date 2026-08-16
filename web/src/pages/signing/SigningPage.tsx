@@ -205,12 +205,16 @@ export default function SigningPage() {
     toast.success("Signature captured!");
   };
 
-  const handleComplete = async () => {
-    const requiredFields = fields.filter((f) => f.isRequired);
-    const missingFields = requiredFields.filter((f) => !fieldValues[f.id]?.value && !fieldValues[f.id]?.imageData);
+  const assignedFields = fields.filter((f) => !f.signerId || f.signerId === signer?.id);
+  const assignedRequiredFields = assignedFields.filter((f) => f.isRequired !== false);
+  const completedCount = assignedFields.filter((f) => fieldValues[f.id]?.value || fieldValues[f.id]?.imageData).length;
+  const missingAssignedFields = assignedRequiredFields.filter((f) => !fieldValues[f.id]?.value && !fieldValues[f.id]?.imageData);
+  const pageFields = fields.filter((f) => f.pageNumber === currentPage);
+  const progress = assignedFields.length > 0 ? (completedCount / assignedFields.length) * 100 : 0;
 
-    if (missingFields.length > 0) {
-      toast.error(`Please complete ${missingFields.length} required field${missingFields.length !== 1 ? "s" : ""}.`);
+  const handleComplete = async () => {
+    if (missingAssignedFields.length > 0) {
+      toast.error(`Please complete your ${missingAssignedFields.length} assigned required field${missingAssignedFields.length !== 1 ? "s" : ""}.`);
       return;
     }
 
@@ -224,11 +228,6 @@ export default function SigningPage() {
       setCompleting(false);
     }
   };
-
-  const assignedFields = fields.filter((f) => !f.signerId || f.signerId === signer?.id);
-  const completedCount = assignedFields.filter((f) => fieldValues[f.id]?.value || fieldValues[f.id]?.imageData).length;
-  const pageFields = fields.filter((f) => f.pageNumber === currentPage);
-  const progress = assignedFields.length > 0 ? (completedCount / assignedFields.length) * 100 : 0;
 
   if (loading) {
     return (
@@ -326,8 +325,9 @@ export default function SigningPage() {
       {/* Instruction Banner */}
       {termsAccepted && (
         <div className="bg-brand-600 text-white text-center py-2 px-4 text-sm font-medium">
-          Click the highlighted fields to complete this document.
-          {fields.length > 0 && <span className="ml-2 opacity-80">{fields.length - completedCount} remaining</span>}
+          {missingAssignedFields.length > 0
+            ? `Click the highlighted fields to complete your assigned signatures. ${missingAssignedFields.length} remaining`
+            : `All required fields completed! Click Complete Signing below to finish. 🎉`}
         </div>
       )}
 
@@ -438,8 +438,8 @@ export default function SigningPage() {
 
         <button
           onClick={handleComplete}
-          disabled={completing || completedCount < fields.filter((f) => f.isRequired).length}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={completing || missingAssignedFields.length > 0}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
         >
           {completing ? (
             <Loader2 size={16} className="animate-spin" />
