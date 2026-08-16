@@ -8,7 +8,7 @@ import { DocumentField, Signer, FIELD_LABELS } from "@/types";
 import { cn } from "@/lib/utils";
 import TermsModal from "@/components/signing/TermsModal";
 import SignatureModal from "@/components/signing/SignatureModal";
-import TextInputModal from "@/components/document/TextInputModal";
+import TextInputModal from "@/components/signing/TextInputModal";
 import Logo from "@/components/layout/Logo";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
