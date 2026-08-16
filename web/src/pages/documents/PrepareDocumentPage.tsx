@@ -549,7 +549,7 @@ export default function PrepareDocumentPage() {
     await handleSave();
     setSending(true);
     try {
-      const res = await api.post(`/documents/${id}/send`);
+      const res = await api.post(`/documents/${id}/send`, { fields });
       setSignerLinks(res.data.signerLinks || []);
       setShowLinksModal(true);
       toast.success("Document sent for signature!");

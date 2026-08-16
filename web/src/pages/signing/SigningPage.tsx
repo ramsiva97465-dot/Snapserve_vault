@@ -201,9 +201,10 @@ export default function SigningPage() {
     }
   };
 
-  const completedCount = fields.filter((f) => fieldValues[f.id]?.value || fieldValues[f.id]?.imageData).length;
+  const assignedFields = fields.filter((f) => !f.signerId || f.signerId === signer?.id);
+  const completedCount = assignedFields.filter((f) => fieldValues[f.id]?.value || fieldValues[f.id]?.imageData).length;
   const pageFields = fields.filter((f) => f.pageNumber === currentPage);
-  const progress = fields.length > 0 ? (completedCount / fields.length) * 100 : 0;
+  const progress = assignedFields.length > 0 ? (completedCount / assignedFields.length) * 100 : 0;
 
   if (loading) {
     return (
@@ -287,7 +288,7 @@ export default function SigningPage() {
           </button>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-surface-700">{completedCount}/{fields.length}</span>
+            <span className="text-xs font-semibold text-surface-700">{completedCount}/{assignedFields.length}</span>
             <div className="w-24 h-1.5 bg-surface-200 rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full bg-brand-500 transition-all"

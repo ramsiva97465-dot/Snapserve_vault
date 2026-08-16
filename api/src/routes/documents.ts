@@ -337,7 +337,41 @@ router.post("/:id/send", async (req: AuthRequest, res) => {
   try {
     const crypto = await import("node:crypto");
     const docId = req.params.id as string;
+    const { fields: passedFields } = req.body || {};
     const memDoc = inMemoryStore.documents.find((d) => d.id === docId);
+
+    // Sync fields if passed
+    if (passedFields && Array.isArray(passedFields) && passedFields.length > 0) {
+      if (memDoc) {
+        memDoc.fields = passedFields.map((f: any, idx: number) => ({
+          ...f,
+          id: f.id || `field-${Date.now()}-${idx}`,
+          documentId: docId,
+        }));
+      }
+      try {
+        await prisma.documentField.deleteMany({ where: { documentId: docId } });
+        await prisma.documentField.createMany({
+          data: passedFields.map((f: any) => ({
+            documentId: docId,
+            signerId: f.signerId,
+            fieldType: f.fieldType,
+            fieldName: f.fieldName || f.fieldType,
+            pageNumber: f.pageNumber || 1,
+            x: f.x,
+            y: f.y,
+            width: f.width,
+            height: f.height,
+            isRequired: f.isRequired ?? true,
+            value: f.value,
+            imageData: f.imageData,
+            properties: f.properties,
+          })),
+        });
+      } catch (dbErr) {
+        console.warn("DB fields sync note on send:", dbErr);
+      }
+    }
 
     let docSigners = memDoc?.signers;
     if (!docSigners?.length) {
