@@ -812,10 +812,25 @@ export default function PrepareDocumentPage() {
               }}
               className="w-full px-2.5 py-1.5 rounded-lg border border-surface-300 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
             >
-              <option value="sans-serif">Sans-Serif (Modern / Inter)</option>
-              <option value="Georgia, serif">Serif (Georgia / Classic)</option>
-              <option value="'Brush Script MT', cursive, Georgia, serif">Cursive (Brush Script / Signature)</option>
-              <option value="'Courier New', monospace">Monospace (Courier)</option>
+          {/* Font Family */}
+          <div>
+            <label className="text-[11px] font-medium text-surface-600 mb-1 block">Font Family</label>
+            <select
+              value={selectedField.properties?.fontFamily || "Inter, system-ui, sans-serif"}
+              onChange={(e) => {
+                const val = e.target.value;
+                setFields((prev) => prev.map((f) => f.id === selectedField.id ? { ...f, properties: { ...f.properties, fontFamily: val } } : f));
+              }}
+              className="w-full px-2.5 py-1.5 rounded-lg border border-surface-300 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white font-medium"
+            >
+              <option value="Inter, system-ui, sans-serif">Inter (Modern Sans-Serif)</option>
+              <option value="Arial, Helvetica, sans-serif">Arial (Corporate Standard)</option>
+              <option value="'Times New Roman', Times, serif">Times New Roman (Legal Contract)</option>
+              <option value="Georgia, serif">Georgia (Classic Serif)</option>
+              <option value="'Caveat', cursive">Caveat (Natural Handwritten)</option>
+              <option value="'Dancing Script', cursive">Dancing Script (Cursive Signature)</option>
+              <option value="'Great Vibes', cursive">Great Vibes (Formal Calligraphy)</option>
+              <option value="'Courier New', monospace">Courier New (Monospace)</option>
             </select>
           </div>
 
@@ -829,9 +844,9 @@ export default function PrepareDocumentPage() {
                   const val = +e.target.value;
                   setFields((prev) => prev.map((f) => f.id === selectedField.id ? { ...f, properties: { ...f.properties, fontSize: val } } : f));
                 }}
-                className="w-full px-2 py-1.5 rounded-lg border border-surface-300 text-xs focus:outline-none bg-white"
+                className="w-full px-2 py-1.5 rounded-lg border border-surface-300 text-xs focus:outline-none bg-white font-medium"
               >
-                {[10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40].map((sz) => (
+                {[9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40].map((sz) => (
                   <option key={sz} value={sz}>{sz}px</option>
                 ))}
               </select>
@@ -871,12 +886,13 @@ export default function PrepareDocumentPage() {
             <label className="text-[11px] font-medium text-surface-600 mb-1.5 block">Ink & Text Color</label>
             <div className="flex items-center gap-1.5 flex-wrap">
               {[
-                { name: "Black", hex: "#0f172a" },
-                { name: "Blue Ink", hex: "#1e40af" },
-                { name: "Navy Ink", hex: "#1e3a8a" },
-                { name: "Red", hex: "#dc2626" },
-                { name: "Emerald", hex: "#059669" },
-                { name: "Purple", hex: "#7c3aed" },
+                { name: "Royal Blue Ink", hex: "#1d4ed8" },
+                { name: "Classic Navy", hex: "#1e3a8a" },
+                { name: "Pure Black", hex: "#0f172a" },
+                { name: "Stamp Red", hex: "#b91c1c" },
+                { name: "Verified Emerald", hex: "#047857" },
+                { name: "Executive Purple", hex: "#6d28d9" },
+                { name: "Seal Gold", hex: "#b45309" },
               ].map((c) => (
                 <button
                   key={c.hex}
