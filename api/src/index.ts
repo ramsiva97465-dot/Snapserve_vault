@@ -78,8 +78,14 @@ const webDistPath = path.resolve(__dirname, "../../web/dist");
 if (fs.existsSync(webDistPath)) {
   console.log(`📦 Serving web frontend from ${webDistPath}`);
   app.use(express.static(webDistPath, {
-    maxAge: "1d",
+    maxAge: "1y",
+    immutable: true,
     index: false,
+    setHeaders: (res, filepath) => {
+      if (filepath.endsWith(".html")) {
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      }
+    },
   }));
 
   app.get("*", (req, res, next) => {

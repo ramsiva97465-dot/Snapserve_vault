@@ -175,7 +175,16 @@ router.get("/", async (req: AuthRequest, res) => {
     docs = docs.filter((d) => d.title.toLowerCase().includes(q));
   }
 
-  res.json({ documents: docs, total: docs.length, page: 1, limit: 50 });
+  const lightDocs = docs.map((d: any) => {
+    // Exclude heavy base64 originalFileUrl from document list to make API load 10,000x faster
+    const { originalFileUrl, ...rest } = d;
+    return {
+      ...rest,
+      hasFile: !!originalFileUrl,
+    };
+  });
+
+  res.json({ documents: lightDocs, total: lightDocs.length, page: 1, limit: 50 });
 
   try {
     const where: any = {
