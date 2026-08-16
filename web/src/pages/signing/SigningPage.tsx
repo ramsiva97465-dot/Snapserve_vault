@@ -400,28 +400,36 @@ export default function SigningPage() {
                   }}
                 >
                   {hasValue ? (
-                    <div className="flex items-center justify-center h-full w-full relative bg-transparent">
-                      {fVal.imageData ? (
-                        <img
-                          src={fVal.imageData}
-                          alt="Signature"
-                          className="max-w-full max-h-full object-contain p-0.5 bg-transparent"
-                        />
+                    <div className="flex items-center justify-center h-full w-full relative">
+                      {field.fieldType === "SIGNATURE" || field.fieldType === "INITIALS" || field.fieldType === "SEAL" ? (
+                        fVal.imageData ? (
+                          <img
+                            src={fVal.imageData}
+                            alt="Signature"
+                            className="max-w-full max-h-full object-contain p-0.5 bg-transparent"
+                          />
+                        ) : (
+                          <span className="font-signature text-base font-bold text-slate-900 px-1">
+                            {fVal.value}
+                          </span>
+                        )
                       ) : (
-                        <span
-                          className="truncate px-1 bg-transparent text-center"
-                          style={{
-                            color: props.color || "#0f172a",
-                            fontFamily: props.fontFamily || "inherit",
-                            fontSize: props.fontSize ? `${props.fontSize * scale}px` : "12px",
-                            fontWeight: props.fontWeight || "bold",
-                            fontStyle: props.fontStyle || "normal",
-                          }}
-                        >
-                          {fVal.value}
-                        </span>
+                        <div className="w-full h-full flex items-center justify-center bg-white/95 backdrop-blur-xs border border-slate-200 rounded px-1.5 py-0.5 shadow-xs">
+                          <span
+                            className="truncate text-center w-full font-semibold text-slate-900"
+                            style={{
+                              color: props.color || "#0f172a",
+                              fontFamily: props.fontFamily || "inherit",
+                              fontSize: props.fontSize ? `${props.fontSize * scale}px` : "12px",
+                              fontWeight: props.fontWeight || "bold",
+                              fontStyle: props.fontStyle || "normal",
+                            }}
+                          >
+                            {fVal.value}
+                          </span>
+                        </div>
                       )}
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-600 border border-white rounded-full flex items-center justify-center shadow-xs">
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-600 border border-white rounded-full flex items-center justify-center shadow-xs z-20">
                         <Check size={8} className="text-white" />
                       </div>
                     </div>
