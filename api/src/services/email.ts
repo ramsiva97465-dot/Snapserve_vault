@@ -64,6 +64,9 @@ export async function sendEmailViaBrevo({
   }
 
   try {
+    const senderEmail = process.env.BREVO_SENDER_EMAIL || "ramsiva97465@gmail.com";
+    const senderName = process.env.BREVO_SENDER_NAME || "SnapServe Vault";
+
     const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -72,7 +75,7 @@ export async function sendEmailViaBrevo({
         Accept: "application/json",
       },
       body: JSON.stringify({
-        sender: { name: "SnapServe Vault", email: "noreply@snapserve.com" },
+        sender: { name: senderName, email: senderEmail },
         to: [{ email: toEmail, name: toName || toEmail }],
         subject,
         htmlContent,
