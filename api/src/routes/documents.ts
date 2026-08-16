@@ -818,9 +818,14 @@ router.get("/:id/download", async (req: AuthRequest, res) => {
       pdfBuffer = Buffer.from(await blankPdf.save());
     }
 
-    const pdfDoc = await PDFDocument.load(pdfBuffer);
-    const pages = pdfDoc.getPages();
-    const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    let pdfDoc: any;
+    try {
+      pdfDoc = await PDFDocument.load(pdfBuffer);
+    } catch (pdfParseErr) {
+      console.warn("Notice: Non-PDF binary loaded (e.g. PPTX/DOCX), initializing vector PDF for burning:", pdfParseErr);
+      pdfDoc = await PDFDocument.create();
+      pdfDoc.addPage([794, 1123]);
+    }
 
     const rawFields = docObj?.fields?.length ? docObj.fields : (memDoc?.fields || []);
     const fieldsToBurn = rawFields.map((f: any) => {
@@ -832,6 +837,14 @@ router.get("/:id/download", async (req: AuthRequest, res) => {
         imageData: f.imageData || sig?.imageData || memF?.imageData,
       };
     });
+
+    const maxPageNum = Math.max(1, ...fieldsToBurn.map((f: any) => f.pageNumber || 1));
+    while (pdfDoc.getPageCount() < maxPageNum) {
+      pdfDoc.addPage([794, 1123]);
+    }
+
+    const pages = pdfDoc.getPages();
+    const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
     for (const f of fieldsToBurn) {
       const pageIndex = (f.pageNumber || 1) - 1;
