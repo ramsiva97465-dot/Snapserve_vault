@@ -353,7 +353,7 @@ router.post("/:id/send", async (req: AuthRequest, res) => {
     }
 
     if (!docSigners?.length) {
-      docSigners = [{ id: "signer-1", name: "Guest Signer", email: "guest@example.com" }];
+      return res.status(400).json({ error: "Please add signers to the document before sending." });
     }
 
     const signerLinks: any[] = [];

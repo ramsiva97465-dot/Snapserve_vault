@@ -72,7 +72,7 @@ router.get("/token/:token", async (req: Request, res: Response) => {
                 originalFileUrl: latestDbDoc.originalFileUrl,
                 pageCount: latestDbDoc.pageCount || 1,
               },
-              signer: latestDbDoc.signers?.[0] || { id: "guest-signer", name: "Guest Signer", email: "guest@example.com" },
+              signer: latestDbDoc.signers?.[0] || { id: "signer-1", name: "Signer", email: "" },
               fields: latestDbDoc.fields || [],
               allSigners: latestDbDoc.signers || [],
             });
@@ -83,7 +83,7 @@ router.get("/token/:token", async (req: Request, res: Response) => {
 
       const activeSigner =
         (targetDoc.signers || []).find((s: any) => s.id === matchedTokenObj?.signerId) ||
-        targetDoc.signers?.[0] || { id: "guest-signer", name: "Guest Signer", email: "guest@example.com" };
+        targetDoc.signers?.[0] || { id: "signer-1", name: "Signer", email: "" };
 
       return res.json({
         document: {
@@ -163,7 +163,7 @@ router.get("/token/:token", async (req: Request, res: Response) => {
         originalFileUrl: targetDoc.originalFileUrl,
         pageCount: (targetDoc as any).pageCount || 1,
       },
-      signer: targetDoc.signers?.[0] || { id: "guest-signer", name: "Guest Signer", email: "guest@example.com" },
+      signer: targetDoc.signers?.[0] || { id: "signer-1", name: "Signer", email: "" },
       fields: targetDoc.fields || [],
       allSigners: targetDoc.signers || [],
     });
