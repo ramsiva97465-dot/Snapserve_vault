@@ -72,7 +72,7 @@ export async function sendEmailViaBrevo({
   const senders = [
     {
       email: process.env.BREVO_SENDER_EMAIL || "noreply@snapserve.ai",
-      name: process.env.BREVO_SENDER_NAME || "SnapServe Vault",
+      name: process.env.BREVO_SENDER_NAME || "SnapServe.ai",
     },
     {
       email: "[EMAIL_ADDRESS]",
