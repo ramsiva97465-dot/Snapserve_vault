@@ -119,10 +119,20 @@ export default function PrepareDocumentPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Drag state
+  // Drag & Resize state
   const draggingToolField = useRef<FieldType | null>(null);
   const draggingFieldId = useRef<string | null>(null);
   const dragOffset = useRef({ x: 0, y: 0 });
+  const resizingState = useRef<{
+    fieldId: string;
+    handle: "se" | "sw" | "ne" | "nw" | "e" | "s" | "w" | "n";
+    startX: number;
+    startY: number;
+    initialX: number;
+    initialY: number;
+    initialW: number;
+    initialH: number;
+  } | null>(null);
 
   // Auto-sync fields and values to sessionStorage on change
   useEffect(() => {
@@ -450,7 +460,34 @@ export default function PrepareDocumentPage() {
     horizontal: [],
   });
 
+  const handleResizeMouseDown = (
+    e: React.MouseEvent | React.TouchEvent,
+    fieldId: string,
+    handle: "se" | "sw" | "ne" | "nw" | "e" | "s" | "w" | "n"
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const field = fields.find((f) => f.id === fieldId);
+    if (!field) return;
+
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+    resizingState.current = {
+      fieldId,
+      handle,
+      startX: clientX,
+      startY: clientY,
+      initialX: field.x,
+      initialY: field.y,
+      initialW: field.width,
+      initialH: field.height,
+    };
+    setSelectedFieldId(fieldId);
+  };
+
   const handleFieldMouseDown = (e: React.MouseEvent | React.TouchEvent, fieldId: string) => {
+    if (resizingState.current) return;
     e.stopPropagation();
     const field = fields.find((f) => f.id === fieldId);
     if (!field) return;
@@ -465,6 +502,64 @@ export default function PrepareDocumentPage() {
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+    // 1. Interactive Field Resizing
+    if (resizingState.current) {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+      const { fieldId, handle, startX, startY, initialX, initialY, initialW, initialH } = resizingState.current;
+      const deltaX = (clientX - startX) / scale;
+      const deltaY = (clientY - startY) / scale;
+
+      let newX = initialX;
+      let newY = initialY;
+      let newW = initialW;
+      let newH = initialH;
+
+      const MIN_W = 35;
+      const MIN_H = 22;
+
+      if (handle.includes("e")) {
+        newW = Math.max(MIN_W, initialW + deltaX);
+      }
+      if (handle.includes("s")) {
+        newH = Math.max(MIN_H, initialH + deltaY);
+      }
+      if (handle.includes("w")) {
+        const potentialW = initialW - deltaX;
+        if (potentialW >= MIN_W) {
+          newW = potentialW;
+          newX = initialX + deltaX;
+        } else {
+          newW = MIN_W;
+          newX = initialX + (initialW - MIN_W);
+        }
+      }
+      if (handle.includes("n")) {
+        const potentialH = initialH - deltaY;
+        if (potentialH >= MIN_H) {
+          newH = potentialH;
+          newY = initialY + deltaY;
+        } else {
+          newH = MIN_H;
+          newY = initialY + (initialH - MIN_H);
+        }
+      }
+
+      setFields((prev) =>
+        prev.map((f) =>
+          f.id === fieldId
+            ? { ...f, x: Math.round(newX), y: Math.round(newY), width: Math.round(newW), height: Math.round(newH) }
+            : f
+        )
+      );
+      return;
+    }
+
+    // 2. Field Dragging (Moving)
     if (!draggingFieldId.current) return;
     const container = containerRef.current;
     if (!container) return;
@@ -501,55 +596,37 @@ export default function PrepareDocumentPage() {
       const oCY = other.y + other.height / 2;
 
       // X-Axis (Vertical Lines) Snapping
-      // 1. Left to Left
       if (Math.abs(snappedX - oL) < SNAP_THRESHOLD) {
         snappedX = oL;
         verticalGuides.push(oL);
-      }
-      // 2. Left to Right
-      else if (Math.abs(snappedX - oR) < SNAP_THRESHOLD) {
+      } else if (Math.abs(snappedX - oR) < SNAP_THRESHOLD) {
         snappedX = oR;
         verticalGuides.push(oR);
-      }
-      // 3. Center to Center
-      else if (Math.abs(snappedX + width / 2 - oCX) < SNAP_THRESHOLD) {
+      } else if (Math.abs(snappedX + width / 2 - oCX) < SNAP_THRESHOLD) {
         snappedX = oCX - width / 2;
         verticalGuides.push(oCX);
-      }
-      // 4. Right to Left
-      else if (Math.abs(snappedX + width - oL) < SNAP_THRESHOLD) {
+      } else if (Math.abs(snappedX + width - oL) < SNAP_THRESHOLD) {
         snappedX = oL - width;
         verticalGuides.push(oL);
-      }
-      // 5. Right to Right
-      else if (Math.abs(snappedX + width - oR) < SNAP_THRESHOLD) {
+      } else if (Math.abs(snappedX + width - oR) < SNAP_THRESHOLD) {
         snappedX = oR - width;
         verticalGuides.push(oR);
       }
 
       // Y-Axis (Horizontal Lines) Snapping
-      // 1. Top to Top
       if (Math.abs(snappedY - oT) < SNAP_THRESHOLD) {
         snappedY = oT;
         horizontalGuides.push(oT);
-      }
-      // 2. Directly below with clean 6px gap (e.g. Date right under Signature)
-      else if (Math.abs(snappedY - (oB + 6)) < SNAP_THRESHOLD) {
+      } else if (Math.abs(snappedY - (oB + 6)) < SNAP_THRESHOLD) {
         snappedY = oB + 6;
         horizontalGuides.push(oB + 6);
-      }
-      // 3. Directly above with clean 6px gap
-      else if (Math.abs(snappedY + height - (oT - 6)) < SNAP_THRESHOLD) {
+      } else if (Math.abs(snappedY + height - (oT - 6)) < SNAP_THRESHOLD) {
         snappedY = oT - 6 - height;
         horizontalGuides.push(oT - 6);
-      }
-      // 4. Center to Center
-      else if (Math.abs(snappedY + height / 2 - oCY) < SNAP_THRESHOLD) {
+      } else if (Math.abs(snappedY + height / 2 - oCY) < SNAP_THRESHOLD) {
         snappedY = oCY - height / 2;
         horizontalGuides.push(oCY);
-      }
-      // 5. Bottom to Bottom
-      else if (Math.abs(snappedY + height - oB) < SNAP_THRESHOLD) {
+      } else if (Math.abs(snappedY + height - oB) < SNAP_THRESHOLD) {
         snappedY = oB - height;
         horizontalGuides.push(oB);
       }
@@ -566,6 +643,7 @@ export default function PrepareDocumentPage() {
 
   const handleCanvasMouseUp = () => {
     draggingFieldId.current = null;
+    resizingState.current = null;
     setActiveGuidelines({ vertical: [], horizontal: [] });
   };
 
@@ -1502,6 +1580,63 @@ export default function PrepareDocumentPage() {
                     >
                       {signer ? getInitials(signer.name) : "?"}
                     </div>
+
+                    {/* Interactive Resizing Handles (4 Corners + 4 Edges) */}
+                    {isSelected && (
+                      <>
+                        {/* 4 Corners */}
+                        <div
+                          className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-white border border-brand-600 rounded-sm shadow cursor-se-resize hover:scale-125 z-50"
+                          onMouseDown={(e) => handleResizeMouseDown(e, field.id, "se")}
+                          onTouchStart={(e) => handleResizeMouseDown(e, field.id, "se")}
+                          title="Drag to resize width & height"
+                        />
+                        <div
+                          className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-white border border-brand-600 rounded-sm shadow cursor-sw-resize hover:scale-125 z-50"
+                          onMouseDown={(e) => handleResizeMouseDown(e, field.id, "sw")}
+                          onTouchStart={(e) => handleResizeMouseDown(e, field.id, "sw")}
+                          title="Drag to resize width & height"
+                        />
+                        <div
+                          className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-white border border-brand-600 rounded-sm shadow cursor-ne-resize hover:scale-125 z-50"
+                          onMouseDown={(e) => handleResizeMouseDown(e, field.id, "ne")}
+                          onTouchStart={(e) => handleResizeMouseDown(e, field.id, "ne")}
+                          title="Drag to resize width & height"
+                        />
+                        <div
+                          className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-white border border-brand-600 rounded-sm shadow cursor-nw-resize hover:scale-125 z-50"
+                          onMouseDown={(e) => handleResizeMouseDown(e, field.id, "nw")}
+                          onTouchStart={(e) => handleResizeMouseDown(e, field.id, "nw")}
+                          title="Drag to resize width & height"
+                        />
+
+                        {/* 4 Edges */}
+                        <div
+                          className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-3 bg-white border border-brand-600 rounded-sm shadow cursor-e-resize hover:scale-125 z-50"
+                          onMouseDown={(e) => handleResizeMouseDown(e, field.id, "e")}
+                          onTouchStart={(e) => handleResizeMouseDown(e, field.id, "e")}
+                          title="Drag to resize width"
+                        />
+                        <div
+                          className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-2 bg-white border border-brand-600 rounded-sm shadow cursor-s-resize hover:scale-125 z-50"
+                          onMouseDown={(e) => handleResizeMouseDown(e, field.id, "s")}
+                          onTouchStart={(e) => handleResizeMouseDown(e, field.id, "s")}
+                          title="Drag to resize height"
+                        />
+                        <div
+                          className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-3 bg-white border border-brand-600 rounded-sm shadow cursor-w-resize hover:scale-125 z-50"
+                          onMouseDown={(e) => handleResizeMouseDown(e, field.id, "w")}
+                          onTouchStart={(e) => handleResizeMouseDown(e, field.id, "w")}
+                          title="Drag to resize width"
+                        />
+                        <div
+                          className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-2 bg-white border border-brand-600 rounded-sm shadow cursor-n-resize hover:scale-125 z-50"
+                          onMouseDown={(e) => handleResizeMouseDown(e, field.id, "n")}
+                          onTouchStart={(e) => handleResizeMouseDown(e, field.id, "n")}
+                          title="Drag to resize height"
+                        />
+                      </>
+                    )}
 
                     {/* Action Toolbar on Hover / Select (Edit ✏️, Clear 🔄, Delete 🗑️) */}
                     {isSelected && (
