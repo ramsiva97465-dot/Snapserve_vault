@@ -44,11 +44,11 @@ function ProfileSettings() {
         <h2 className="text-lg font-bold text-surface-950 mb-4">Owner Profile</h2>
         <div className="flex items-center gap-4 mb-6">
           <div className="w-16 h-16 rounded-full bg-brand-600 flex items-center justify-center text-white text-2xl font-bold shadow-md">
-            {getInitials(name || user?.name || "S")}
+            {getInitials(name || user?.name || "U")}
           </div>
           <div>
-            <p className="font-bold text-surface-900 text-lg">{name || user?.name || "SIVARAM R S"}</p>
-            <p className="text-surface-500 text-sm">{email || user?.email || "ramsiva97465@gmail.com"}</p>
+            <p className="font-bold text-surface-900 text-lg">{name || user?.name || "User"}</p>
+            <p className="text-surface-500 text-sm">{email || user?.email || ""}</p>
             <span className="inline-block mt-1 text-xs bg-brand-50 text-brand-700 px-2.5 py-0.5 rounded-full font-semibold">
               Document Owner
             </span>
@@ -416,7 +416,7 @@ function VaultAssetsSettings() {
                     type="text"
                     value={textValue}
                     onChange={(e) => setTextValue(e.target.value)}
-                    placeholder="e.g. SIVARAM R S | ramsiva97465@gmail.com"
+                    placeholder="e.g. John Doe | john@example.com"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-surface-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
                   />
                 </div>

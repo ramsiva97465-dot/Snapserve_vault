@@ -5,8 +5,8 @@ import api from "@/lib/api";
 
 const DEFAULT_USER: User = {
   id: "00000000-0000-0000-0000-000000000001",
-  email: "ramsiva97465@gmail.com",
-  name: "SIVARAM R S",
+  email: "user@snapserve.ai",
+  name: "SnapServe User",
   organizationId: "00000000-0000-0000-0000-000000000002",
   organizationName: "Snapserve Vault",
   role: "OWNER",

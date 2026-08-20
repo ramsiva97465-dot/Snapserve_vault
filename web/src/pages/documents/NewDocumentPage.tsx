@@ -178,8 +178,8 @@ export default function NewDocumentPage() {
   };
 
   const handleAddMyself = () => {
-    const ownerName = user?.name || "SIVARAM R S";
-    const ownerEmail = user?.email || "ramsiva97465@gmail.com";
+    const ownerName = user?.name || "Document Owner";
+    const ownerEmail = user?.email || "";
     const color = SIGNER_COLORS[0];
 
     const createdSigner = {
@@ -400,7 +400,7 @@ export default function NewDocumentPage() {
                     setAddingMode("external");
                     setNewSigner({
                       name: user?.name || "SIVARAM R S",
-                      email: user?.email || "ramsiva97465@gmail.com",
+                      email: user?.email || "[EMAIL_ADDRESS]",
                     });
                   }}
                   className="group flex flex-col items-center gap-4 p-6 rounded-2xl border-2 border-surface-200 hover:border-emerald-400 hover:bg-emerald-50/30 transition-all text-left"
@@ -537,7 +537,7 @@ export default function NewDocumentPage() {
                       if (signers.length === 0) {
                         setNewSigner({
                           name: user?.name || "SIVARAM R S",
-                          email: user?.email || "ramsiva97465@gmail.com",
+                          email: user?.email || "[EMAIL_ADDRESS]",
                         });
                       } else {
                         setNewSigner({ name: "", email: "" });

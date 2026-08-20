@@ -99,12 +99,12 @@ export default function Sidebar({ onClose, isMobile }: SidebarProps) {
         <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg">
           <div className="w-7 h-7 rounded-full bg-brand-600 flex items-center justify-center flex-shrink-0">
             <span className="text-white text-xs font-semibold">
-              {(user?.name || "SIVARAM R S").charAt(0).toUpperCase()}
+              {(user?.name || "U").charAt(0).toUpperCase()}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-surface-900 truncate">{user?.name || "SIVARAM R S"}</p>
-            <p className="text-xs text-surface-500 truncate">{user?.email || "ramsiva97465@gmail.com"}</p>
+            <p className="text-sm font-semibold text-surface-900 truncate">{user?.name || "User"}</p>
+            <p className="text-xs text-surface-500 truncate">{user?.email || ""}</p>
           </div>
           <button
             onClick={handleLogout}

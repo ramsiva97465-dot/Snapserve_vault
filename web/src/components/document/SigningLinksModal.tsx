@@ -26,7 +26,7 @@ export default function SigningLinksModal({ links, documentId, documentTitle, on
   const [fromEmails, setFromEmails] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     links.forEach((l) => {
-      initial[l.signer.id] = currentUser?.email || "ramsiva97465@gmail.com";
+      initial[l.signer.id] = currentUser?.email || "";
     });
     return initial;
   });
@@ -193,7 +193,7 @@ export default function SigningLinksModal({ links, documentId, documentTitle, on
                           <label className="block text-[10px] font-bold text-blue-800 uppercase tracking-wider mb-0.5">From (Sender)</label>
                           <input
                             type="email"
-                            value={fromEmails[link.signer.id] ?? (currentUser?.email || "ramsiva97465@gmail.com")}
+                            value={fromEmails[link.signer.id] ?? (currentUser?.email || "")}
                             onChange={(e) =>
                               setFromEmails((prev) => ({ ...prev, [link.signer.id]: e.target.value }))
                             }
@@ -217,7 +217,7 @@ export default function SigningLinksModal({ links, documentId, documentTitle, on
                           onClick={() =>
                             handleSendEmail(
                               link.signer.id,
-                              fromEmails[link.signer.id] ?? (currentUser?.email || "ramsiva97465@gmail.com"),
+                              fromEmails[link.signer.id] ?? (currentUser?.email || ""),
                               currentEmail,
                               cleanSigningUrl
                             )
