@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Check, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, AlertCircle, Loader2, Download } from "lucide-react";
 import api from "@/lib/api";
 import { DocumentField, Signer, FIELD_LABELS } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn, getFieldRenderCoords } from "@/lib/utils";
 import TermsModal from "@/components/signing/TermsModal";
 import SignatureModal from "@/components/signing/SignatureModal";
 import TextInputModal from "@/components/signing/TextInputModal";
@@ -368,10 +368,10 @@ export default function SigningPage() {
       )}
 
       {/* Main */}
-      <div className="flex-1 flex justify-center p-4 sm:p-6">
+      <div className="flex-1 flex justify-center p-4 sm:p-6 overflow-auto">
         <div className="relative">
           {/* PDF Canvas */}
-          <div className="relative shadow-xl rounded-sm">
+          <div className="relative shadow-xl rounded-sm" style={{ width: pageSize.width, height: pageSize.height }}>
             {!pdfDoc ? (
               <div style={{ width: 794, height: 1123 }} className="bg-white flex items-center justify-center">
                 <p className="text-surface-400">PDF not available</p>
@@ -386,6 +386,7 @@ export default function SigningPage() {
               const fVal = fieldValues[field.id] || { value: field.value, imageData: field.imageData };
               const hasValue = !!(fVal.imageData || fVal.value);
               const props = field.properties || {};
+              const coords = getFieldRenderCoords(field, pageSize, scale);
 
               return (
                 <div
@@ -401,10 +402,10 @@ export default function SigningPage() {
                       : "border-1.5 border-slate-300 bg-slate-100/40 rounded"
                   )}
                   style={{
-                    left: field.x * scale,
-                    top: field.y * scale,
-                    width: field.width * scale,
-                    height: field.height * scale,
+                    left: coords.left,
+                    top: coords.top,
+                    width: coords.width,
+                    height: coords.height,
                     zIndex: 10,
                   }}
                 >

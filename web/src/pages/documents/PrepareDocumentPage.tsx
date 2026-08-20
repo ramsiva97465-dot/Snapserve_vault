@@ -9,7 +9,7 @@ import {
 import * as pdfjs from "pdfjs-dist";
 import api from "@/lib/api";
 import { Document, Signer, DocumentField, FieldType, FIELD_SIZES, FIELD_LABELS } from "@/types";
-import { getInitials, getSignerColor, cn } from "@/lib/utils";
+import { getInitials, getSignerColor, cn, getFieldRenderCoords } from "@/lib/utils";
 import StatusBadge from "@/components/document/StatusBadge";
 import SigningLinksModal from "@/components/document/SigningLinksModal";
 import SignatureModal from "@/components/signing/SignatureModal";
@@ -1494,6 +1494,7 @@ export default function PrepareDocumentPage() {
                 const displayImageData = signedValue?.imageData || field.imageData;
                 const displayValue = signedValue?.value || field.value;
                 const hasValue = !!(displayImageData || displayValue);
+                const coords = getFieldRenderCoords(field, pageSize, scale);
 
                 return (
                   <div
@@ -1506,10 +1507,10 @@ export default function PrepareDocumentPage() {
                       isSelected ? "ring-2 ring-offset-1 ring-brand-500" : "hover:ring-1"
                     )}
                     style={{
-                      left: field.x * scale,
-                      top: field.y * scale,
-                      width: field.width * scale,
-                      height: field.height * scale,
+                      left: coords.left,
+                      top: coords.top,
+                      width: coords.width,
+                      height: coords.height,
                       backgroundColor: hasValue ? "transparent" : `${color}18`,
                       borderColor: hasValue ? "transparent" : color,
                       borderStyle: hasValue ? "none" : "solid",

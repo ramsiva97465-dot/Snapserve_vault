@@ -1,4 +1,4 @@
-﻿import { clsx, type ClassValue } from "clsx";
+import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { formatDistanceToNow, format, parseISO } from "date-fns";
 import { DocumentStatus, SignerStatus, SIGNER_COLORS } from "@/types";
@@ -120,3 +120,25 @@ export function getAuditLabel(action: string): string {
   };
   return labels[action] || action;
 }
+
+export function getFieldRenderCoords(
+  field: { x: number; y: number; width: number; height: number; containerWidth?: number; containerHeight?: number },
+  pageSize: { width: number; height: number },
+  scale: number
+) {
+  if (field.containerWidth && field.containerHeight && field.containerWidth > 0 && field.containerHeight > 0) {
+    return {
+      left: (field.x / field.containerWidth) * pageSize.width,
+      top: (field.y / field.containerHeight) * pageSize.height,
+      width: (field.width / field.containerWidth) * pageSize.width,
+      height: (field.height / field.containerHeight) * pageSize.height,
+    };
+  }
+  return {
+    left: field.x * scale,
+    top: field.y * scale,
+    width: field.width * scale,
+    height: field.height * scale,
+  };
+}
+

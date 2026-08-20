@@ -8,7 +8,7 @@ import * as pdfjs from "pdfjs-dist";
 import api from "@/lib/api";
 import { Document, FIELD_LABELS } from "@/types";
 import StatusBadge from "@/components/document/StatusBadge";
-import { formatDate, formatDateTime, formatFileSize, getInitials, getSignerColor, cn } from "@/lib/utils";
+import { formatDate, formatDateTime, formatFileSize, getInitials, getSignerColor, cn, getFieldRenderCoords } from "@/lib/utils";
 import { toast } from "sonner";
 import SigningLinksModal from "@/components/document/SigningLinksModal";
 import { useAuthStore } from "@/stores/authStore";
@@ -269,6 +269,7 @@ export default function DocumentDetailPage() {
                 {pageFields.map((field) => {
                   const hasValue = !!(field.imageData || field.value);
                   const props = field.properties || {};
+                  const coords = getFieldRenderCoords(field, pageSize, 0.85);
 
                   return (
                     <div
@@ -278,10 +279,10 @@ export default function DocumentDetailPage() {
                         hasValue ? "border-none bg-transparent" : "border-1.5 border-brand-400 bg-brand-50/20"
                       )}
                       style={{
-                        left: field.x * 0.85,
-                        top: field.y * 0.85,
-                        width: field.width * 0.85,
-                        height: field.height * 0.85,
+                        left: coords.left,
+                        top: coords.top,
+                        width: coords.width,
+                        height: coords.height,
                         zIndex: 10,
                       }}
                     >
