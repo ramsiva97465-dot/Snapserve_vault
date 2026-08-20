@@ -4,7 +4,7 @@
   "private": true,
   "description": "Snapserve Vault Unified Monorepo (Single Service Deployment)",
   "scripts": {
-    "build": "npm --prefix web install && npm --prefix web run build && npm --prefix api install && npm --prefix api run build",
+    "build": "npm --prefix web install && npm --prefix web run build && npm --prefix api install && cd api && npx prisma generate && npx prisma db push --accept-data-loss && tsc",
     "start": "npm --prefix api start"
   }
 }
