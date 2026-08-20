@@ -131,16 +131,8 @@ async function renderFieldOnPdf(
     } else if (value) {
       // 2. EMAIL, DATE, TEXT, COMPANY, PHONE, ADDRESS, NUMBER -> Draw clean crisp text without outer gray boxes
       const textStr = String(value);
-      const fontSize = Math.max(9, Math.min(12, fieldH * 0.45));
-
-      page.drawRectangle({
-        x: fieldX,
-        y: fieldY,
-        width: fieldW,
-        height: fieldH,
-        color: rgb(1, 1, 1),
-        borderWidth: 0,
-      });
+      const userFontSize = field.properties?.fontSize ? field.properties.fontSize * scaleY : null;
+      const fontSize = userFontSize || Math.max(9, Math.min(36, fieldH * 0.5));
 
       page.drawText(textStr, {
         x: fieldX + 2,
