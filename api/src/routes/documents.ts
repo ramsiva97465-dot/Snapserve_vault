@@ -161,11 +161,10 @@ async function renderFieldOnPdf(
 router.get("/", async (req: AuthRequest, res) => {
   const { status, search } = req.query;
   const userId = req.user!.id;
-  const userOrgId = req.user!.organizationId;
   const userEmail = (req.user!.email || "").toLowerCase();
 
   let docs = inMemoryStore.documents.filter((d) => {
-    const isOwner = d.ownerId === userId || (d.organizationId === userOrgId && d.organizationId !== "00000000-0000-0000-0000-000000000002");
+    const isOwner = d.ownerId === userId;
     const isSharedToEmail = d.signers?.some((s: any) => s.email?.toLowerCase() === userEmail);
     return isOwner || isSharedToEmail;
   });
@@ -193,7 +192,6 @@ router.get("/", async (req: AuthRequest, res) => {
     const where: any = {
       OR: [
         { ownerId: userId },
-        { organizationId: userOrgId },
         { signers: { some: { email: userEmail } } },
       ],
     };
@@ -222,18 +220,35 @@ router.get("/", async (req: AuthRequest, res) => {
   }
 });
 
-// Get single document
+// Get single document - Strict Ownership / Signer Access Verification
 router.get("/:id", async (req: AuthRequest, res) => {
   const targetId = req.params.id as string;
+  const userId = req.user!.id;
+  const userEmail = (req.user!.email || "").toLowerCase();
+
   const memDoc = inMemoryStore.documents.find((d) => d.id === targetId);
 
-  if (memDoc?.fields?.length) {
-    return res.json(memDoc);
+  // Verify access for in-memory doc if available
+  if (memDoc) {
+    const isOwner = memDoc.ownerId === userId;
+    const isSigner = memDoc.signers?.some((s: any) => s.email?.toLowerCase() === userEmail);
+    if (!isOwner && !isSigner && memDoc.ownerId) {
+      return res.status(403).json({ error: "Access denied to this document" });
+    }
+    if (memDoc.fields?.length) {
+      return res.json(memDoc);
+    }
   }
 
   try {
     const dbDoc = await prisma.document.findFirst({
-      where: { id: targetId },
+      where: {
+        id: targetId,
+        OR: [
+          { ownerId: userId },
+          { signers: { some: { email: userEmail } } },
+        ],
+      },
       include: {
         owner: { select: { id: true, name: true, email: true } },
         signers: { orderBy: { orderIndex: "asc" } },
@@ -258,22 +273,8 @@ router.get("/:id", async (req: AuthRequest, res) => {
         } catch {}
       }
       const idx = inMemoryStore.documents.findIndex((m) => m.id === targetId);
-      const existingMem = idx !== -1 ? inMemoryStore.documents[idx] : null;
-
-      // Merge signatures and inMemoryStore fields so recipient signatures/values always render on canvas
-      const mergedFields = (dbDoc.fields || []).map((dbF: any) => {
-        const sig = (dbDoc.signatures || []).find((s: any) => s.fieldId === dbF.id);
-        const memF = (existingMem?.fields || []).find((m: any) => m.id === dbF.id || m.fieldType === dbF.fieldType);
-        return {
-          ...dbF,
-          value: dbF.value || sig?.value || memF?.value,
-          imageData: dbF.imageData || sig?.imageData || memF?.imageData,
-        };
-      });
-
-      dbDoc.fields = mergedFields.length ? mergedFields : (existingMem?.fields || []);
       if (idx !== -1) {
-        inMemoryStore.documents[idx] = dbDoc as any;
+        inMemoryStore.documents[idx] = { ...inMemoryStore.documents[idx], ...dbDoc } as any;
       } else {
         inMemoryStore.documents.unshift(dbDoc as any);
       }
