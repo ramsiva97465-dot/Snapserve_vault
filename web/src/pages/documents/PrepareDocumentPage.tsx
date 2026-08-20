@@ -116,6 +116,8 @@ export default function PrepareDocumentPage() {
   const [pageCount, setPageCount] = useState(1);
   const [scale, setScale] = useState(1.0);
   const [pageSize, setPageSize] = useState({ width: 794, height: 1123 });
+  // nativePdfSize = true unscaled PDF dimensions (used for coordinate mapping to PDF burn engine)
+  const [nativePdfSize, setNativePdfSize] = useState({ width: 794, height: 1123 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -334,12 +336,14 @@ export default function PrepareDocumentPage() {
       }
       const page = await pdfDoc.getPage(currentPage);
       if (cancelled) return;
+      const nativeViewport = page.getViewport({ scale: 1.0 }); // unscaled native PDF dimensions
       const viewport = page.getViewport({ scale });
       const canvas = canvasRef.current!;
       const ctx = canvas.getContext("2d")!;
       canvas.height = viewport.height;
       canvas.width = viewport.width;
       setPageSize({ width: viewport.width, height: viewport.height });
+      setNativePdfSize({ width: nativeViewport.width, height: nativeViewport.height });
       const task = page.render({ canvasContext: ctx, viewport });
       renderTaskRef.current = task;
       try {
@@ -427,9 +431,6 @@ export default function PrepareDocumentPage() {
     const y = (e.clientY - rect.top) / scale;
     const size = FIELD_SIZES[fieldType];
 
-    const unscaledW = pageSize.width / scale;
-    const unscaledH = pageSize.height / scale;
-
     const newField: PlacedField = {
       id: `temp-${Date.now()}`,
       documentId: id!,
@@ -441,8 +442,8 @@ export default function PrepareDocumentPage() {
       y,
       width: size.width,
       height: size.height,
-      containerWidth: unscaledW,
-      containerHeight: unscaledH,
+      containerWidth: nativePdfSize.width,
+      containerHeight: nativePdfSize.height,
       isRequired: true,
       createdAt: new Date().toISOString(),
       signer: signers.find((s) => s.id === selectedSignerId),
