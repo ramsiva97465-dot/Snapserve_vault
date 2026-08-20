@@ -10,8 +10,8 @@ router.post("/", async (req: AuthRequest, res) => {
   try {
     const { documentId, signerId, fieldType, fieldName, pageNumber, x, y, width, height, isRequired, defaultValue, placeholder, properties } = req.body;
 
-    const document = await prisma.document.findFirst({
-      where: { id: documentId, organizationId: req.user!.organizationId },
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
     });
     if (!document) return res.status(404).json({ error: "Document not found" });
 

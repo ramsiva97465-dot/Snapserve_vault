@@ -302,15 +302,55 @@ router.get("/:id", async (req: AuthRequest, res) => {
 router.post("/", async (req: AuthRequest, res) => {
   const { title } = req.body;
   try {
+    let orgId = req.user?.organizationId;
+
+    // Check if organization exists in DB; if not, find or create one
+    if (orgId) {
+      const org = await prisma.organization.findUnique({ where: { id: orgId } });
+      if (!org) {
+        const member = await prisma.organizationMember.findFirst({
+          where: { userId: req.user!.id },
+        });
+        if (member) {
+          orgId = member.organizationId;
+        } else {
+          const newOrg = await prisma.organization.create({
+            data: { name: "My Organization" },
+          });
+          await prisma.organizationMember.create({
+            data: { userId: req.user!.id, organizationId: newOrg.id, role: "OWNER" },
+          });
+          orgId = newOrg.id;
+        }
+      }
+    } else {
+      const member = await prisma.organizationMember.findFirst({
+        where: { userId: req.user!.id },
+      });
+      if (member) {
+        orgId = member.organizationId;
+      } else {
+        const newOrg = await prisma.organization.create({
+          data: { name: "My Organization" },
+        });
+        await prisma.organizationMember.create({
+          data: { userId: req.user!.id, organizationId: newOrg.id, role: "OWNER" },
+        });
+        orgId = newOrg.id;
+      }
+    }
+
     const document = await prisma.document.create({
       data: {
         title: title || "Untitled Document",
         ownerId: req.user!.id,
-        organizationId: req.user!.organizationId,
+        organizationId: orgId,
         status: "DRAFT",
       },
     });
-    res.status(201).json(document);
+
+    inMemoryStore.documents.unshift(document as any);
+    return res.status(201).json(document);
   } catch (error) {
     console.warn("Using in-memory fallback for create document:", error);
     const newDoc: InMemoryDocument = {
@@ -326,7 +366,7 @@ router.post("/", async (req: AuthRequest, res) => {
       fields: []
     };
     inMemoryStore.documents.unshift(newDoc);
-    res.status(201).json(newDoc);
+    return res.status(201).json(newDoc);
   }
 });
 
@@ -523,14 +563,16 @@ router.post("/:id/upload", upload.single("file"), async (req: AuthRequest, res) 
     }
 
     try {
-      const document = await prisma.document.findFirst({
-        where: { id: req.params.id as string, organizationId: req.user!.organizationId },
+      const document = await prisma.document.findUnique({
+        where: { id: req.params.id as string },
       });
       if (document) {
         const updated = await prisma.document.update({
           where: { id: document.id },
           data: { originalFileUrl: fileUrl, fileName, fileSize, status: "PREPARING" },
         });
+        const idx = inMemoryStore.documents.findIndex((m) => m.id === updated.id);
+        if (idx !== -1) inMemoryStore.documents[idx] = { ...inMemoryStore.documents[idx], ...(updated as any) };
         return res.json(updated);
       }
     } catch (dbErr) {
@@ -556,8 +598,8 @@ router.post("/:id/upload", upload.single("file"), async (req: AuthRequest, res) 
 router.patch("/:id", async (req: AuthRequest, res) => {
   const { title, signingOrder, expiresAt, status } = req.body;
   try {
-    const document = await prisma.document.findFirst({
-      where: { id: req.params.id as string, organizationId: req.user!.organizationId },
+    const document = await prisma.document.findUnique({
+      where: { id: req.params.id as string },
     });
 
     if (document) {
@@ -570,6 +612,8 @@ router.patch("/:id", async (req: AuthRequest, res) => {
           ...(status && { status }),
         },
       });
+      const idx = inMemoryStore.documents.findIndex((m) => m.id === updated.id);
+      if (idx !== -1) inMemoryStore.documents[idx] = { ...inMemoryStore.documents[idx], ...(updated as any) };
       return res.json(updated);
     }
   } catch (dbErr) {
