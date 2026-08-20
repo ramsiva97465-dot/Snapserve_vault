@@ -40,7 +40,10 @@ export default function DocumentsPage() {
   }, [urlStatus]);
 
   const fetchDocs = useCallback(async () => {
-    setLoading(true);
+    // Only show full loading spinner on initial empty state
+    if (docs.length === 0) {
+      setLoading(true);
+    }
     try {
       const params: any = {};
       if (search) params.search = search;
@@ -53,7 +56,7 @@ export default function DocumentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, status]);
+  }, [search, status, docs.length]);
 
   useEffect(() => {
     fetchDocs();
