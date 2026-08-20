@@ -8,15 +8,15 @@ router.use(authenticate);
 
 router.get("/", async (req: AuthRequest, res) => {
   try {
-    const orgId = req.user!.organizationId;
+    const userId = req.user!.id;
 
     const dbPromise = Promise.all([
-      prisma.document.count({ where: { organizationId: orgId } }),
-      prisma.document.count({ where: { organizationId: orgId, status: "SENT" } }),
-      prisma.document.count({ where: { organizationId: orgId, status: "COMPLETED" } }),
-      prisma.document.count({ where: { organizationId: orgId, status: "DRAFT" } }),
-      prisma.document.count({ where: { organizationId: orgId, status: { in: ["SENT", "VIEWED", "PARTIALLY_SIGNED"] } } }),
-      prisma.document.count({ where: { organizationId: orgId, status: "EXPIRED" } }),
+      prisma.document.count({ where: { ownerId: userId } }),
+      prisma.document.count({ where: { ownerId: userId, status: "SENT" } }),
+      prisma.document.count({ where: { ownerId: userId, status: "COMPLETED" } }),
+      prisma.document.count({ where: { ownerId: userId, status: "DRAFT" } }),
+      prisma.document.count({ where: { ownerId: userId, status: { in: ["SENT", "VIEWED", "PARTIALLY_SIGNED"] } } }),
+      prisma.document.count({ where: { ownerId: userId, status: "EXPIRED" } }),
     ]);
 
     const timeoutPromise = new Promise((_, reject) =>
