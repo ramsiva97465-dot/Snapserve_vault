@@ -136,6 +136,8 @@ router.post("/bulk-save", async (req: AuthRequest, res) => {
             y: f.y,
             width: f.width,
             height: f.height,
+            containerWidth: f.containerWidth,
+            containerHeight: f.containerHeight,
             isRequired: f.isRequired ?? true,
             defaultValue: f.defaultValue,
             placeholder: f.placeholder,

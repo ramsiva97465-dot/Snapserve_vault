@@ -155,31 +155,6 @@ router.get("/", async (req: AuthRequest, res) => {
   const userId = req.user!.id;
   const userEmail = (req.user!.email || "").toLowerCase();
 
-  let docs = inMemoryStore.documents.filter((d) => {
-    const isOwner = d.ownerId === userId;
-    const isSharedToEmail = d.signers?.some((s: any) => s.email?.toLowerCase() === userEmail);
-    return isOwner || isSharedToEmail;
-  });
-
-  if (status) {
-    docs = docs.filter((d) => d.status === status);
-  }
-  if (search) {
-    const q = (search as string).toLowerCase();
-    docs = docs.filter((d) => d.title.toLowerCase().includes(q));
-  }
-
-  const lightDocs = docs.map((d: any) => {
-    // Exclude heavy base64 originalFileUrl from document list to make API load 10,000x faster
-    const { originalFileUrl, ...rest } = d;
-    return {
-      ...rest,
-      hasFile: !!originalFileUrl,
-    };
-  });
-
-  res.json({ documents: lightDocs, total: lightDocs.length, page: 1, limit: 50 });
-
   try {
     const where: any = {
       OR: [
@@ -187,12 +162,13 @@ router.get("/", async (req: AuthRequest, res) => {
         { signers: { some: { email: userEmail } } },
       ],
     };
-    if (status) where.status = status;
+    if (status) where.status = status as string;
     const dbDocs = await prisma.document.findMany({
       where,
       include: {
         owner: { select: { id: true, name: true, email: true } },
         signers: true,
+        fields: true,
         _count: { select: { signatures: true } },
       },
       orderBy: { updatedAt: "desc" },
@@ -210,6 +186,31 @@ router.get("/", async (req: AuthRequest, res) => {
   } catch (err) {
     console.warn("DB list sync note:", err);
   }
+
+  let docs = inMemoryStore.documents.filter((d) => {
+    const isOwner = d.ownerId === userId;
+    const isSharedToEmail = d.signers?.some((s: any) => s.email?.toLowerCase() === userEmail);
+    return isOwner || isSharedToEmail;
+  });
+
+  if (status) {
+    docs = docs.filter((d) => d.status === status);
+  }
+  if (search) {
+    const q = (search as string).toLowerCase();
+    docs = docs.filter((d) => d.title.toLowerCase().includes(q));
+  }
+
+  const lightDocs = docs.map((d: any) => {
+    // Exclude heavy base64 originalFileUrl from document list to make API load fast
+    const { originalFileUrl, ...rest } = d;
+    return {
+      ...rest,
+      hasFile: !!originalFileUrl,
+    };
+  });
+
+  return res.json({ documents: lightDocs, total: lightDocs.length, page: 1, limit: 50 });
 });
 
 // Get single document - Strict Ownership / Signer Access Verification

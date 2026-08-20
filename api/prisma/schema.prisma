@@ -240,6 +240,10 @@ model DocumentField {
   y            Float
   width        Float
   height       Float
+  containerWidth Float?  @map("container_width")
+  containerHeight Float? @map("container_height")
+  value        String?
+  imageData    String?   @map("image_data")
   isRequired   Boolean   @default(true) @map("is_required")
   defaultValue String?   @map("default_value")
   placeholder  String?
