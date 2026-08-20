@@ -15,7 +15,7 @@ export interface AuthRequest extends Request {
 
 const DEFAULT_DEMO_USER = {
   id: "00000000-0000-0000-0000-000000000001",
-  email: "ramsiva97465@gmail.com",
+  email: "[EMAIL_ADDRESS]",
   organizationId: "00000000-0000-0000-0000-000000000002",
   role: "OWNER",
 };

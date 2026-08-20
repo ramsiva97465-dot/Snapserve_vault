@@ -91,7 +91,7 @@ export function getSavedAssets(): SavedAsset[] {
         id: "detail-default-1",
         type: "TEXT",
         name: "Owner Contact Info",
-        data: "SIVARAM R S | ramsiva97465@gmail.com",
+        data: "SIVARAM R S | [EMAIL_ADDRESS]",
         createdAt: new Date().toISOString(),
       },
     ];

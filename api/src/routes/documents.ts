@@ -743,6 +743,8 @@ router.post("/:id/share", async (req: AuthRequest, res) => {
 
     const memDoc = inMemoryStore.documents.find((d) => d.id === docId);
     const docTitle = memDoc?.title || "Document";
+    const origin = (req.headers.origin as string) || process.env.FRONTEND_URL || process.env.APP_URL || process.env.CORS_ORIGIN || `${req.protocol}://${req.get("host")}`;
+    const defaultDocUrl = `${origin}/documents/${docId}`;
 
     if (shareType === "EMAIL") {
       if (!recipientEmail) return res.status(400).json({ error: "Recipient email is required" });
@@ -756,7 +758,7 @@ router.post("/:id/share", async (req: AuthRequest, res) => {
         toName: recipientName,
         subject: `Signature Request: ${docTitle}`,
         documentTitle: docTitle,
-        shareUrl: shareUrl || `http://localhost:5173/documents/${docId}`,
+        shareUrl: shareUrl || defaultDocUrl,
         message,
       });
 
@@ -765,7 +767,7 @@ router.post("/:id/share", async (req: AuthRequest, res) => {
 
     if (shareType === "WHATSAPP") {
       const phone = (recipientPhone || "").replace(/\D/g, "");
-      const targetUrl = shareUrl || `http://localhost:5173/documents/${docId}`;
+      const targetUrl = shareUrl || defaultDocUrl;
       const text = encodeURIComponent(`📄 Check out this document "${docTitle}": ${targetUrl}`);
       const waUrl = phone ? `https://api.whatsapp.com/send?phone=${phone}&text=${text}` : `https://api.whatsapp.com/send?text=${text}`;
       return res.json({ success: true, whatsappUrl: waUrl, message: "WhatsApp share link created!" });

@@ -72,7 +72,8 @@ router.post("/invite", async (req: AuthRequest, res) => {
 
     // Send email invite via Mail service
     const { sendEmailViaBrevo } = await import("../services/email");
-    const joinUrl = `${process.env.CORS_ORIGIN || "http://localhost:5173"}/signup?email=${encodeURIComponent(email)}`;
+    const origin = (req.headers.origin as string) || process.env.FRONTEND_URL || process.env.APP_URL || process.env.CORS_ORIGIN || `${req.protocol}://${req.get("host")}`;
+    const joinUrl = `${origin}/signup?email=${encodeURIComponent(email)}`;
     
     await sendEmailViaBrevo({
       toEmail: email,
