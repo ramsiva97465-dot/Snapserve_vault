@@ -3,17 +3,6 @@ import { persist } from "zustand/middleware";
 import { User } from "@/types";
 import api from "@/lib/api";
 
-const DEFAULT_USER: User = {
-  id: "00000000-0000-0000-0000-000000000001",
-  email: "user@snapserve.ai",
-  name: "SnapServe User",
-  organizationId: "00000000-0000-0000-0000-000000000002",
-  organizationName: "Snapserve Vault",
-  role: "OWNER",
-};
-
-const DEFAULT_TOKEN = "demo-session-jwt-token-snapserve";
-
 interface AuthState {
   user: User | null;
   token: string | null;
@@ -38,14 +27,14 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post("/auth/login", { email, password });
           const { token, user } = response.data;
-          const validToken = token || DEFAULT_TOKEN;
-          const validUser = user || DEFAULT_USER;
-          localStorage.setItem("snapserve_token", validToken);
-          set({ user: validUser, token: validToken, isAuthenticated: true, isLoading: false });
+          if (!token || !user) {
+            throw new Error("Invalid response from server");
+          }
+          localStorage.setItem("snapserve_token", token);
+          set({ user, token, isAuthenticated: true, isLoading: false });
         } catch (error: any) {
+          set({ user: null, token: null, isAuthenticated: false, isLoading: false });
           throw error;
-        } finally {
-          set({ isLoading: false });
         }
       },
 
@@ -54,12 +43,14 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post("/auth/signup", data);
           const { token, user } = response.data;
-          const validToken = token || DEFAULT_TOKEN;
-          const validUser = user || DEFAULT_USER;
-          localStorage.setItem("snapserve_token", validToken);
-          set({ user: validUser, token: validToken, isAuthenticated: true, isLoading: false });
+          if (!token || !user) {
+            throw new Error("Invalid response from server");
+          }
+          localStorage.setItem("snapserve_token", token);
+          set({ user, token, isAuthenticated: true, isLoading: false });
         } catch (error: any) {
-          set({ user: DEFAULT_USER, token: DEFAULT_TOKEN, isAuthenticated: true, isLoading: false });
+          set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+          throw error;
         }
       },
 

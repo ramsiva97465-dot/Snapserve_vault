@@ -13,12 +13,7 @@ export interface AuthRequest extends Request {
   };
 }
 
-const DEFAULT_DEMO_USER = {
-  id: "00000000-0000-0000-0000-000000000001",
-  email: "[EMAIL_ADDRESS]",
-  organizationId: "00000000-0000-0000-0000-000000000002",
-  role: "OWNER",
-};
+
 
 export const authenticate = async (
   req: AuthRequest,
@@ -26,48 +21,13 @@ export const authenticate = async (
   next: NextFunction
 ) => {
   try {
-    // Ensure demo org and user exist in Prisma DB so queries never fail on foreign keys
-    try {
-      await prisma.organization.upsert({
-        where: { id: DEFAULT_DEMO_USER.organizationId },
-        update: {},
-        create: {
-          id: DEFAULT_DEMO_USER.organizationId,
-          name: "Snapserve Vault",
-        },
-      });
-
-      await prisma.user.upsert({
-        where: { id: DEFAULT_DEMO_USER.id },
-        update: {},
-        create: {
-          id: DEFAULT_DEMO_USER.id,
-          name: "SIVARAM R S",
-          email: DEFAULT_DEMO_USER.email,
-          passwordHash: "hashedpassword",
-        },
-      });
-
-      await prisma.organizationMember.upsert({
-        where: { id: "00000000-0000-0000-0000-000000000003" },
-        update: {},
-        create: {
-          id: "00000000-0000-0000-0000-000000000003",
-          userId: DEFAULT_DEMO_USER.id,
-          organizationId: DEFAULT_DEMO_USER.organizationId,
-          role: "OWNER",
-        },
-      });
-    } catch {}
-
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      req.user = DEFAULT_DEMO_USER;
-      return next();
+      return res.status(401).json({ error: "Authentication required. Please log in." });
     }
 
     const token = authHeader.substring(7);
-    
+
     let decoded: any;
     try {
       decoded = jwt.verify(
@@ -75,9 +35,7 @@ export const authenticate = async (
         process.env.JWT_SECRET || "default_secret_key_change_in_prod"
       );
     } catch {
-      // Fallback for non-JWT demo token
-      req.user = DEFAULT_DEMO_USER;
-      return next();
+      return res.status(401).json({ error: "Invalid or expired token. Please log in again." });
     }
 
     try {
@@ -96,20 +54,18 @@ export const authenticate = async (
         return next();
       }
     } catch {
-      // Fallback if DB lookup fails
+      // DB connection lookup note
     }
 
-    // Fallback user object
     req.user = {
-      id: decoded.userId || DEFAULT_DEMO_USER.id,
-      email: decoded.email || DEFAULT_DEMO_USER.email,
-      organizationId: DEFAULT_DEMO_USER.organizationId,
-      role: DEFAULT_DEMO_USER.role,
+      id: decoded.userId,
+      email: decoded.email,
+      organizationId: decoded.organizationId || "00000000-0000-0000-0000-000000000002",
+      role: decoded.role || "MEMBER",
     };
 
     next();
   } catch (error) {
-    req.user = DEFAULT_DEMO_USER;
-    next();
+    return res.status(401).json({ error: "Authentication failed. Please log in." });
   }
 };
